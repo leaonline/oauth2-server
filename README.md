@@ -6,7 +6,7 @@ It implements the `authorization_code` and works like the Facebook's OAuth popup
 
 ## Install
 ```
-meteor add rocketchat:oauth2-server
+meteor add leaonline:oauth2-server
 ```
 
 ## Implementation
