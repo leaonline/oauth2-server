@@ -3,27 +3,28 @@ import { Meteor } from 'meteor/meteor'
 import { WebApp } from 'meteor/webapp'
 import { Model } from './model'
 
-const bind = fn => bind(fn)
+const bind = fn => Meteor.bindEnvironment(fn)
 const oauthserver = Npm.require('oauth2-server')
-// WebApp.rawConnectHandlers.use app
-// JsonRoutes.Middleware.use app
+const { Request } = oauthserver
+const { Response } = oauthserver
+const getDebugMiddleWare = instance => (req, res, next) => {
+  if (instance.config.debug === true) {
+    console.log('[OAuth2Server]', req.method, req.url)
+  }
+  return next()
+}
 
-class OAuth2Server {
-  constructor (config) {
-    if (config == null) { config = {} }
-    this.config = config
-    this.model = new Model(this.config)
+export const OAuth2Server = class OAuth2Server {
+  constructor ({ serverOptions, model, routes }) {
+    this.config = { serverOptions, model, routes }
+    this.model = new Model(model)
     this.app = WebApp.connectHandlers
 
-    this.oauth = oauthserver({
-      model: this.model,
-      grants: [ 'authorization_code', 'refresh_token' ],
-      debug: this.config.debug
-    })
+    const oauthOptions = Object.assign({ model: this.model }, serverOptions)
+    this.oauth = new oauthserver(oauthOptions)
 
     this.publishAuhorizedClients()
-    this.initRoutes()
-
+    this.initRoutes(routes)
     return this
   }
 
@@ -46,14 +47,59 @@ class OAuth2Server {
     })
   }
 
-  initRoutes () {
-    const self = this
-    const debugMiddleware = function (req, res, next) {
-      if (self.config.debug === true) {
-        console.log('[OAuth2Server]', req.method, req.url)
-      }
-      return next()
+  tokenHandler (options) {
+    return function (req, res, next) {
+      let request = new Request(req)
+      let response = new Response(res)
+      return oauth.token(request, response, options)
+        .then(function (code) {
+          res.locals.oauth = { token: token }
+          next()
+        })
+        .catch(function (err) {
+          // handle error condition
+        })
     }
+  }
+
+  authorizeHandler (options) {
+    return function (req, res, next) {
+      let request = new Request(req)
+      let response = new Response(res)
+      return oauth.authorize(request, response, options)
+        .then(function (code) {
+          res.locals.oauth = { code: code }
+          next()
+        })
+        .catch(function (err) {
+          // handle error condition
+        })
+    }
+  }
+
+  authenticateHandler (options) {
+    return function (req, res, next) {
+      let request = new Request(req)
+      let response = new Response(res)
+      return oauth.authenticate(request, response, options)
+        .then(function (token) {
+          res.locals.oauth = { token: token }
+          next()
+        })
+        .catch(function (err) {
+          // handle error condition
+        })
+    }
+  }
+
+  authenticatedRoute (route, fn) {
+    return this.app.use(route, getDebugMiddleWare(this), this.authenticateHandler(), fn)
+  }
+
+  initRoutes ({ accessTokenUrl = '/oauth/token', authorizeUrl = '/oauth/authorize', errorUrl = '/oauth/error', fallbackUrl = '/oauth/*', errorHandler = err => console.error(err), } = {}) {
+    const self = this
+
+    const debugMiddleware = getDebugMiddleWare(self)
 
     // Transforms requests which are POST and aren't "x-www-form-urlencoded" content type
     // and they pass the required information as query strings
@@ -68,12 +114,12 @@ class OAuth2Server {
       return next()
     }
 
-    this.app.use('/oauth/token', debugMiddleware, transformRequestsNotUsingFormUrlencodedType, this.oauth.grant())
+    this.app.use(accessTokenUrl, debugMiddleware, this.tokenHandler())
 
-    this.app.use('/oauth/authorize', debugMiddleware, bind(function (req, res, next) {
+    this.app.use(authorizeUrl, debugMiddleware, bind(function (req, res, next) {
       const client = self.model.Clients.findOne({ active: true, clientId: req.query.client_id })
       if ((client == null)) {
-        return res.redirect('/oauth/error/404')
+        return res.redirect(`${errorUrl}/404`)
       }
 
       if (![].concat(client.redirectUri).includes(req.query.redirect_uri)) {
@@ -83,7 +129,7 @@ class OAuth2Server {
       return next()
     }))
 
-    this.app.use('/oauth/authorize', debugMiddleware, bind(function (req, res, next) {
+    this.app.use(authorizeUrl, debugMiddleware, bind(function (req, res, next) {
       if ((req.body.token == null)) {
         return res.sendStatus(401).send('No token')
       }
@@ -96,13 +142,11 @@ class OAuth2Server {
         return res.sendStatus(401).send('Invalid token')
       }
 
-      req.user =
-        { id: user._id }
-
+      req.user = { id: user._id }
       return next()
     }))
 
-    this.app.use('/oauth/authorize', debugMiddleware, this.oauth.authCodeGrant(function (req, next) {
+    this.app.use(authorizeUrl, debugMiddleware, this.authorizeHandler(), bind(function (req, next) {
       if (req.body.allow === 'yes') {
         Meteor.users.update(req.user.id, { $addToSet: { 'oauth.authorizedClients': this.clientId } })
       }
@@ -110,6 +154,6 @@ class OAuth2Server {
       return next(null, req.body.allow === 'yes', req.user)
     }))
 
-    return this.app.use('/oauth/*', this.oauth.errorHandler())
+    return this.app.use(fallbackUrl, errorHandler)
   }
 }
