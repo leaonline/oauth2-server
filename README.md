@@ -12,53 +12,96 @@ meteor add leaonline:oauth2-server
 ## Implementation
 
 ### Server implementation
- * Initialize the lib
- * Add routes to the default router
- * Implement an authenticated route
+
+
 
 `server/oauth2server.js`
 ```javascript
-var oauth2server = new OAuth2Server({
-  // You can change the collection names, the values
-  // below are the default values.
-  accessTokensCollectionName: 'oauth_access_tokens',
-  refreshTokensCollectionName: 'oauth_refresh_tokens',
-  clientsCollectionName: 'oauth_clients',
-  authCodesCollectionName: 'oauth_auth_codes',
-  // You can pass the collection object too
-  // accessTokensCollection: new Meteor.Collection('custom_oauth_access_tokens'),
-  // refreshTokensCollection: new Meteor.Collection('custom_oauth_refresh_tokens'),
-  // clientsCollection: new Meteor.Collection('custom_oauth_clients'),
-  // authCodesCollection: new Meteor.Collection('custom_oauth_auth_codes'),
-  // You can enable some logs too
-  debug: true
-});
+import { Meteor } from "meteor/meteor"
+import { OAuth2Server } from 'meteor/leaonline:oauth2-server'
 
-// Add the express routes of OAuth before the Meteor routes
-WebApp.rawConnectHandlers.use(oauth2server.app);
+const oauth2server = new OAuth2Server({
+  serverOptions: {
+    addAcceptedScopesHeader: true,
+    addAuthorizedScopesHeader: true,
+    allowBearerTokensInQueryString: false,
+    allowEmptyState: false,
+    authorizationCodeLifetime: 300,
+    accessTokenLifetime: 3600,
+    refreshTokenLifetime: 1209600,
+    allowExtendedTokenAttributes: false,
+    requireClientAuthentication: true
+  },
+  model: {
+    accessTokensCollectionName: 'oauth_access_tokens',
+    refreshTokensCollectionName: 'oauth_refresh_tokens',
+    clientsCollectionName: 'oauth_clients',
+    authCodesCollectionName: 'oauth_auth_codes',
+    debug: true
+  },
+  routes: {
+    accessTokenUrl: '/oauth/token',
+    authorizeUrl: '/oauth/authorize',
+    errorUrl: '/oauth/error',
+    fallbackUrl: '/oauth/*'
+  }
+})
 
 // Add a route to return account information
-oauth2server.routes.get('/account', oauth2server.oauth.authorise(), function(req, res, next) {
-  var user = Meteor.users.findOne(req.user.id);
+oauth2server.authenticatedRoute('/oauth/account', function (req, res, next) {
+  var user = Meteor.users.findOne(req.user.id)
 
   res.send({
     id: user._id,
     name: user.name
-  });
-});
+  })
+})
+
+oauth2server.app.use('*', function (req, res, next) {
+  res.writeHead(404)
+  res.end('route not found')
+})
+
 ```
 
 ### Client/Pupup implementation
 
+You should install a router to handle client side routing indendently from the WebApp routes. You can for example use
+
+```bash
+$ meteor add ostrio:flow-router-extra
+```
+
+and then define a client route for your popup dialog:
+
+`client/main.html`
+```javascript
+<head>
+    <title>authserver</title>
+</head>
+
+<template name="layout">
+    {{> yield}}
+</template>
+```
+
+`client/main.js`
+```javascript
+import { FlowRouter } from 'meteor/ostrio:flow-router-extra'
+import './authorize.html'
+import './authorize'
+import './main.html'
+
+// Define the route to render the popup view
+FlowRouter.route('/dialog/oauth', {
+  action: function (params, queryParams) {
+    this.render('layout', 'authorize', queryParams)
+  }
+})
+```
+
 `client/authorize.js`
 ```javascript
-// Define the route to render the popup view
-FlowRouter.route('/oauth/authorize', {
-  action: function(params, queryParams) {
-    BlazeLayout.render('authorize', queryParams);
-  }
-});
-
 // Subscribe the list of already authorized clients
 // to auto accept
 Template.authorize.onCreated(function() {
@@ -91,7 +134,7 @@ Template.authorize.onRendered(function() {
 ```html
 <template name="authorize">
   {{#if currentUser}}
-    <form method="post" action="" role="form" class="{{#unless Template.subscriptionsReady}}hidden{{/unless}}">
+    <form method="post" action="{{redirect_uri}}" role="form" class="{{#unless Template.subscriptionsReady}}hidden{{/unless}}">
       <h2>Authorise</h2>
       <input type="hidden" name="allow" value="yes">
       <input type="hidden" name="token" value="{{getToken}}">
