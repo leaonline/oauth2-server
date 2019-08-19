@@ -4,24 +4,26 @@ import { WebApp } from 'meteor/webapp'
 import { Model } from './model'
 
 const bind = fn => Meteor.bindEnvironment(fn)
-const oauthserver = Npm.require('oauth2-server')
-const { Request } = oauthserver
-const { Response } = oauthserver
+const OAuthserver = Npm.require('oauth2-server')
+const { Request } = OAuthserver
+const { Response } = OAuthserver
+
 const getDebugMiddleWare = instance => (req, res, next) => {
-  if (instance.config.debug === true) {
+  if (instance.debug === true) {
     console.log('[OAuth2Server]', req.method, req.url)
   }
   return next()
 }
 
 export const OAuth2Server = class OAuth2Server {
-  constructor ({ serverOptions, model, routes }) {
+  constructor ({ serverOptions, model, routes, debug }) {
     this.config = { serverOptions, model, routes }
     this.model = new Model(model)
-    this.app = WebApp.connectHandlers
+    this.app = WebApp.rawConnectHandlers
+    this.debug = debug
 
     const oauthOptions = Object.assign({ model: this.model }, serverOptions)
-    this.oauth = new oauthserver(oauthOptions)
+    this.oauth = new OAuthserver(oauthOptions)
 
     this.publishAuhorizedClients()
     this.initRoutes(routes)
@@ -33,17 +35,7 @@ export const OAuth2Server = class OAuth2Server {
       if ((this.userId == null)) {
         return this.ready()
       }
-
-      return Meteor.users.find(
-        { _id: this.userId }
-        , {
-          fields: {
-            'oauth.authorizedClients': 1
-          }
-        }
-      )
-
-      return (typeof user !== 'undefined' && user !== null)
+      return Meteor.users.find({ _id: this.userId }, { fields: { 'oauth.authorizedClients': 1 } })
     })
   }
 
@@ -51,13 +43,14 @@ export const OAuth2Server = class OAuth2Server {
     return function (req, res, next) {
       let request = new Request(req)
       let response = new Response(res)
-      return oauth.token(request, response, options)
-        .then(function (code) {
+      return this.oauth.token(request, response, options)
+        .then(function (token) {
           res.locals.oauth = { token: token }
           next()
         })
         .catch(function (err) {
           // handle error condition
+          console.error(err)
         })
     }
   }
@@ -66,13 +59,14 @@ export const OAuth2Server = class OAuth2Server {
     return function (req, res, next) {
       let request = new Request(req)
       let response = new Response(res)
-      return oauth.authorize(request, response, options)
+      return this.oauth.authorize(request, response, options)
         .then(function (code) {
           res.locals.oauth = { code: code }
           next()
         })
         .catch(function (err) {
           // handle error condition
+          console.error(err)
         })
     }
   }
@@ -81,13 +75,14 @@ export const OAuth2Server = class OAuth2Server {
     return function (req, res, next) {
       let request = new Request(req)
       let response = new Response(res)
-      return oauth.authenticate(request, response, options)
+      return this.oauth.authenticate(request, response, options)
         .then(function (token) {
           res.locals.oauth = { token: token }
           next()
         })
         .catch(function (err) {
           // handle error condition
+          console.error(err)
         })
     }
   }
@@ -105,7 +100,7 @@ export const OAuth2Server = class OAuth2Server {
     // and they pass the required information as query strings
     const transformRequestsNotUsingFormUrlencodedType = function (req, res, next) {
       if (!req.is('application/x-www-form-urlencoded') && (req.method === 'POST')) {
-        if (self.config.debug === true) {
+        if (self.debug === true) {
           console.log('[OAuth2Server]', 'Transforming a request to form-urlencoded with the query going to the body.')
         }
         req.headers[ 'content-type' ] = 'application/x-www-form-urlencoded'
@@ -130,7 +125,7 @@ export const OAuth2Server = class OAuth2Server {
     }))
 
     this.app.use(authorizeUrl, debugMiddleware, bind(function (req, res, next) {
-      if ((req.body.token == null)) {
+      if ((!req.body.token)) {
         return res.sendStatus(401).send('No token')
       }
 
