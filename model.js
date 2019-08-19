@@ -58,122 +58,135 @@ const bind = fn => Meteor.bindEnvironment(fn)
 
 class OAuthMeteorModel {
   static initClass () {
-    this.prototype.getAccessToken = bind(function (bearerToken, callback) {
-      if (debug === true) {
-        console.log('[OAuth2Server]', 'in getAccessToken (bearerToken:', bearerToken, ')')
-      }
-
-      try {
-        const token = AccessTokens.findOne({ accessToken: bearerToken })
-        return callback(null, token)
-      } catch (e) {
-        return callback(e)
-      }
-    })
-
-    this.prototype.getClient = bind(function (clientId, clientSecret, callback) {
-      if (debug === true) {
-        console.log('[OAuth2Server]', 'in getClient (clientId:', clientId, ', clientSecret:', clientSecret, ')')
-      }
-
-      try {
-        let client
-        if ((clientSecret == null)) {
-          client = Clients.findOne({ active: true, clientId })
-        } else {
-          client = Clients.findOne({ active: true, clientId, clientSecret })
+    this.prototype.getAccessToken = bind(function (bearerToken) {
+      return new Promise((resolve, reject) => {
+        if (debug === true) {
+          console.log('[OAuth2Server]', 'in getAccessToken (bearerToken:', bearerToken, ')')
         }
-        return callback(null, client)
-      } catch (e) {
-        return callback(e)
-      }
+
+        try {
+          const token = AccessTokens.findOne({ accessToken: bearerToken })
+          return resolve(token)
+        } catch (e) {
+          return reject(e)
+        }
+      })
     })
 
-    this.prototype.saveToken = bind(function (token, clientId, expires, user, callback) {
-      if (debug === true) {
-        console.log('[OAuth2Server]', 'in saveAccessToken (token:', token, ', clientId:', clientId, ', user:', user, ', expires:', expires, ')')
-      }
+    this.prototype.getClient = bind(function (clientId, clientSecret) {
+      return new Promise((resolve, reject) => {
+        if (debug === true) {
+          console.log('[OAuth2Server]', 'in getClient (clientId:', clientId, ', clientSecret:', clientSecret, ')')
+        }
 
-      try {
-        const tokenId = AccessTokens.insert({
-          accessToken: token,
-          clientId,
-          userId: user.id,
-          expires
-        })
-
-        return callback(null, tokenId)
-      } catch (e) {
-        return callback(e)
-      }
+        try {
+          let client
+          if ((clientSecret == null)) {
+            client = Clients.findOne({ active: true, clientId })
+          } else {
+            client = Clients.findOne({ active: true, clientId, clientSecret })
+          }
+          return resolve(client)
+        } catch (e) {
+          return reject(e)
+        }
+      })
     })
 
-    this.prototype.getAuthCode = bind(function (authCode, callback) {
-      if (debug === true) {
-        console.log('[OAuth2Server]', 'in getAuthCode (authCode: ' + authCode + ')')
-      }
+    this.prototype.saveToken = bind(function (token, clientId, expires, user) {
+      return new Promise((resolve, reject) => {
+        if (debug === true) {
+          console.log('[OAuth2Server]', 'in saveAccessToken (token:', token, ', clientId:', clientId, ', user:', user, ', expires:', expires, ')')
+        }
 
-      try {
-        const code = AuthCodes.findOne({ authCode })
-        return callback(null, code)
-      } catch (e) {
-        return callback(e)
-      }
-    })
-
-    this.prototype.saveAuthorizationCode = bind(function (code, clientId, expires, user, callback) {
-      if (debug === true) {
-        console.log('[OAuth2Server]', 'in saveAuthCode (code:', code, ', clientId:', clientId, ', expires:', expires, ', user:', user, ')')
-      }
-
-      try {
-        const codeId = AuthCodes.upsert(
-          { authCode: code }
-          , {
-            authCode: code,
+        try {
+          const tokenId = AccessTokens.insert({
+            accessToken: token,
             clientId,
             userId: user.id,
             expires
-          }
-        )
+          })
 
-        return callback(null, codeId)
-      } catch (e) {
-        return callback(e)
-      }
+          return resolve(tokenId)
+        } catch (e) {
+          return reject(e)
+        }
+      })
     })
 
-    this.prototype.saveRefreshToken = bind(function (token, clientId, expires, user, callback) {
-      if (debug === true) {
-        console.log('[OAuth2Server]', 'in saveRefreshToken (token:', token, ', clientId:', clientId, ', user:', user, ', expires:', expires, ')')
-      }
+    this.prototype.getAuthCode = bind(function (authCode) {
+      return new Promise((resolve, reject) => {
+        if (debug === true) {
+          console.log('[OAuth2Server]', 'in getAuthCode (authCode: ' + authCode + ')')
+        }
 
-      try {
-        let tokenId
-        return tokenId = RefreshTokens.insert({
+        try {
+          const code = AuthCodes.findOne({ authCode })
+          return resolve(code)
+        } catch (e) {
+          return reject(e)
+        }
+      })
+    })
+
+    this.prototype.saveAuthorizationCode = bind(function (code, clientId, expires, user) {
+      return new Promise((resolve, reject) => {
+        if (debug === true) {
+          console.log('[OAuth2Server]', 'in saveAuthCode (code:', code, ', clientId:', clientId, ', expires:', expires, ', user:', user, ')')
+        }
+
+        try {
+          const codeId = AuthCodes.upsert(
+            { authCode: code }
+            , {
+              authCode: code,
+              clientId,
+              userId: user.id,
+              expires
+            }
+          )
+
+          return resolve(codeId)
+        } catch (e) {
+          return reject(e)
+        }
+      })
+    })
+
+    this.prototype.saveRefreshToken = bind(function (token, clientId, expires, user) {
+      return new Promise((resolve, reject) => {
+        if (debug === true) {
+          console.log('[OAuth2Server]', 'in saveRefreshToken (token:', token, ', clientId:', clientId, ', user:', user, ', expires:', expires, ')')
+        }
+
+        try {
+          const tokenId = RefreshTokens.insert({
             refreshToken: token,
             clientId,
             userId: user.id,
             expires
-          },
+          })
 
-          callback(null, tokenId))
-      } catch (e) {
-        return callback(e)
-      }
+          return resolve(tokenId)
+        } catch (e) {
+          return reject(e)
+        }
+      })
     })
 
-    this.prototype.getRefreshToken = bind(function (refreshToken, callback) {
-      if (debug === true) {
-        console.log('[OAuth2Server]', 'in getRefreshToken (refreshToken: ' + refreshToken + ')')
-      }
+    this.prototype.getRefreshToken = bind(function (refreshToken) {
+      return new Promise((resolve, reject) => {
+        if (debug === true) {
+          console.log('[OAuth2Server]', 'in getRefreshToken (refreshToken: ' + refreshToken + ')')
+        }
 
-      try {
-        const token = RefreshTokens.findOne({ refreshToken })
-        return callback(null, token)
-      } catch (e) {
-        return callback(e)
-      }
+        try {
+          const token = RefreshTokens.findOne({ refreshToken })
+          return resolve(token)
+        } catch (e) {
+          return reject(e)
+        }
+      })
     })
 
     return this
@@ -192,12 +205,13 @@ class OAuthMeteorModel {
     AuthCodes = (AuthCodes = config.authCodesCollection || new Meteor.Collection(config.authCodesCollectionName))
   }
 
-  grantTypeAllowed (clientId, grantType, callback) {
-    if (debug === true) {
-      console.log('[OAuth2Server]', 'in grantTypeAllowed (clientId:', clientId, ', grantType:', grantType + ')')
-    }
-
-    return callback(false, [ 'authorization_code', 'refresh_token' ].includes(grantType))
+  grantTypeAllowed (clientId, grantType) {
+    return new Promise((resolve) => {
+      if (debug === true) {
+        console.log('[OAuth2Server]', 'in grantTypeAllowed (clientId:', clientId, ', grantType:', grantType + ')')
+      }
+      return resolve([ 'authorization_code', 'refresh_token' ].includes(grantType))
+    })
   }
 }
 
