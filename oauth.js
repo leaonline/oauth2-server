@@ -3,14 +3,19 @@ import { Meteor } from 'meteor/meteor'
 import { WebApp } from 'meteor/webapp'
 import { Model } from './model'
 
-const bind = fn => Meteor.bindEnvironment(fn)
+const bodyParser = Npm.require('body-parser')
 const OAuthserver = Npm.require('oauth2-server')
+
+const bind = fn => Meteor.bindEnvironment(fn)
+
 const { Request } = OAuthserver
 const { Response } = OAuthserver
 
+WebApp.connectHandlers.use(bodyParser.urlencoded({ extended: false }))
+
 const getDebugMiddleWare = instance => (req, res, next) => {
   if (instance.debug === true) {
-    console.log('[OAuth2Server]', req.method, req.url)
+    console.log('[OAuth2Server]', req.method, req.url, req.params, req.body)
   }
   return next()
 }
@@ -19,7 +24,7 @@ export const OAuth2Server = class OAuth2Server {
   constructor ({ serverOptions, model, routes, debug }) {
     this.config = { serverOptions, model, routes }
     this.model = new Model(model)
-    this.app = WebApp.rawConnectHandlers
+    this.app = WebApp.connectHandlers
     this.debug = debug
 
     const oauthOptions = Object.assign({ model: this.model }, serverOptions)
@@ -30,6 +35,19 @@ export const OAuth2Server = class OAuth2Server {
     return this
   }
 
+  /**
+   * Registers a new client app. Make sure that only users with permission (ie devs, admins) can call this function
+   * @param title
+   * @param homepage
+   * @param description
+   * @param privacyLink
+   * @param redirectUris
+   * @returns {}
+   */
+  registerClient ({ title, homepage, description, privacyLink, redirectUris }) {
+    return this.model.createClient({ title, homepage, description, privacyLink, redirectUris })
+  }
+
   publishAuhorizedClients () {
     return Meteor.publish('authorizedOAuth', function () {
       if ((this.userId == null)) {
@@ -37,22 +55,6 @@ export const OAuth2Server = class OAuth2Server {
       }
       return Meteor.users.find({ _id: this.userId }, { fields: { 'oauth.authorizedClients': 1 } })
     })
-  }
-
-  tokenHandler (options) {
-    return function (req, res, next) {
-      let request = new Request(req)
-      let response = new Response(res)
-      return this.oauth.token(request, response, options)
-        .then(function (token) {
-          res.locals.oauth = { token: token }
-          next()
-        })
-        .catch(function (err) {
-          // handle error condition
-          console.error(err)
-        })
-    }
   }
 
   authorizeHandler (options) {
@@ -66,7 +68,8 @@ export const OAuth2Server = class OAuth2Server {
         })
         .catch(function (err) {
           // handle error condition
-          console.error(err)
+          res.writeHead(500)
+          res.end(err)
         })
     }
   }
@@ -93,7 +96,6 @@ export const OAuth2Server = class OAuth2Server {
 
   initRoutes ({ accessTokenUrl = '/oauth/token', authorizeUrl = '/oauth/authorize', errorUrl = '/oauth/error', fallbackUrl = '/oauth/*', errorHandler = err => console.error(err), } = {}) {
     const self = this
-
     const debugMiddleware = getDebugMiddleWare(self)
 
     // Transforms requests which are POST and aren't "x-www-form-urlencoded" content type
@@ -109,12 +111,36 @@ export const OAuth2Server = class OAuth2Server {
       return next()
     }
 
-    this.app.use(accessTokenUrl, debugMiddleware, this.tokenHandler())
+    const route = (url, handler) => {
+      this.app.use(url, debugMiddleware)
+      this.app.use(url, handler)
+    }
 
-    this.app.use(authorizeUrl, debugMiddleware, bind(function (req, res, next) {
-      const client = self.model.Clients.findOne({ active: true, clientId: req.query.client_id })
-      if ((client == null)) {
-        return res.redirect(`${errorUrl}/404`)
+    route(accessTokenUrl, function (req, res, next) {
+      console.log('access token handler')
+      let request = new Request(req)
+      let response = new Response(res)
+      return this.oauth.token(request, response)
+        .then(function (token) {
+          console.log('token generated')
+          console.log(token)
+          res.locals.oauth = { token: token }
+          next()
+        })
+        .catch(function (err) {
+          // handle error condition
+          console.error(err)
+        })
+    })
+
+    route(authorizeUrl, bind(function (req, res, next) {
+      console.log('authorize client', req.query.client_id)
+
+      const client = self.model.getClient({ active: true, clientId: req.query.client_id })
+      if (!client) {
+        res.writeHead(404)
+        return res.end()
+        // return res.redirect(`${errorUrl}/404`)
       }
 
       if (![].concat(client.redirectUri).includes(req.query.redirect_uri)) {
@@ -124,7 +150,7 @@ export const OAuth2Server = class OAuth2Server {
       return next()
     }))
 
-    this.app.use(authorizeUrl, debugMiddleware, bind(function (req, res, next) {
+    route(authorizeUrl, bind(function (req, res, next) {
       if ((!req.body.token)) {
         return res.sendStatus(401).send('No token')
       }
@@ -141,7 +167,7 @@ export const OAuth2Server = class OAuth2Server {
       return next()
     }))
 
-    this.app.use(authorizeUrl, debugMiddleware, this.authorizeHandler(), bind(function (req, next) {
+    route(authorizeUrl, bind(function (req, next) {
       if (req.body.allow === 'yes') {
         Meteor.users.update(req.user.id, { $addToSet: { 'oauth.authorizedClients': this.clientId } })
       }
@@ -149,6 +175,6 @@ export const OAuth2Server = class OAuth2Server {
       return next(null, req.body.allow === 'yes', req.user)
     }))
 
-    return this.app.use(fallbackUrl, errorHandler)
+    route(fallbackUrl, errorHandler)
   }
 }
