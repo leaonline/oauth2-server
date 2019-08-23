@@ -1,5 +1,6 @@
 /* global Accounts */
 import { Meteor } from 'meteor/meteor'
+import { check } from 'meteor/check'
 import { WebApp } from 'meteor/webapp'
 import { Model } from './model'
 
@@ -11,6 +12,31 @@ const bind = fn => Meteor.bindEnvironment(fn)
 const { Request } = OAuthserver
 const { Response } = OAuthserver
 
+const requiredAuthorizeParams = {
+  response_type: String,
+  client_id: String,
+  scope: String,
+  redirect_uri: String,
+  state: String
+}
+
+const validate = (actualParams, requiredParams) => {
+  if (!actualParams || !requiredParams) {
+    return false
+  }
+  try {
+    let expected, actual
+    return Object.keys(requiredParams).every(requiredParamKey => {
+      actual = actualParams[ requiredParamKey ]
+      expected = requiredParams[ requiredParamKey ]
+      check(actual, expected)
+      return true
+    })
+  } catch (e) {
+    return false
+  }
+}
+
 WebApp.connectHandlers.use(bodyParser.urlencoded({ extended: false }))
 
 const getDebugMiddleWare = instance => (req, res, next) => {
@@ -18,6 +44,38 @@ const getDebugMiddleWare = instance => (req, res, next) => {
     console.log('[OAuth2Server]', req.method, req.url, req.params, req.body)
   }
   return next()
+}
+
+const publishAuhorizedClients = (pubName) => {
+  return Meteor.publish(pubName, function () {
+    if (!this.userId) {
+      console.log('resolve not logged in')
+      return this.ready()
+    }
+    return Meteor.users.find({ _id: this.userId }, { fields: { 'oauth.authorizedClients': 1 } })
+  })
+}
+
+const redirect = function (res, url, status) {
+  const body = 'Goodbye cruel localhost'
+  res.writeHead(status || 301, {
+    'Location': url,
+    'Content-Length': body.length,
+    'Content-Type': 'text/plain'
+  })
+  res.end(body)
+}
+
+const errorHandler = function (res, { error, description, uri, status, state }) {
+  const errCode = status || 500
+  res.writeHead(errCode, { 'Content-Type': 'application/json' })
+  const body = JSON.stringify({
+    error,
+    error_description: description,
+    error_uri: uri,
+    state
+  }, null, 2)
+  res.end(body)
 }
 
 export const OAuth2Server = class OAuth2Server {
@@ -30,7 +88,8 @@ export const OAuth2Server = class OAuth2Server {
     const oauthOptions = Object.assign({ model: this.model }, serverOptions)
     this.oauth = new OAuthserver(oauthOptions)
 
-    this.publishAuhorizedClients()
+    const authorizedPubName = serverOptions.authorizedPublicationName || 'authorizedOAuth'
+    publishAuhorizedClients(authorizedPubName)
     this.initRoutes(routes)
     return this
   }
@@ -46,15 +105,6 @@ export const OAuth2Server = class OAuth2Server {
    */
   registerClient ({ title, homepage, description, privacyLink, redirectUris }) {
     return this.model.createClient({ title, homepage, description, privacyLink, redirectUris })
-  }
-
-  publishAuhorizedClients () {
-    return Meteor.publish('authorizedOAuth', function () {
-      if ((this.userId == null)) {
-        return this.ready()
-      }
-      return Meteor.users.find({ _id: this.userId }, { fields: { 'oauth.authorizedClients': 1 } })
-    })
   }
 
   authorizeHandler (options) {
@@ -94,7 +144,7 @@ export const OAuth2Server = class OAuth2Server {
     return this.app.use(route, getDebugMiddleWare(this), this.authenticateHandler(), fn)
   }
 
-  initRoutes ({ accessTokenUrl = '/oauth/token', authorizeUrl = '/oauth/authorize', errorUrl = '/oauth/error', fallbackUrl = '/oauth/*', errorHandler = err => console.error(err), } = {}) {
+  initRoutes ({ accessTokenUrl = '/oauth/token', authorizeUrl = '/oauth/authorize', errorUrl = '/oauth/error', fallbackUrl = '/oauth/*' } = {}) {
     const self = this
     const debugMiddleware = getDebugMiddleWare(self)
 
@@ -112,8 +162,26 @@ export const OAuth2Server = class OAuth2Server {
     }
 
     const route = (url, handler) => {
-      this.app.use(url, debugMiddleware)
-      this.app.use(url, handler)
+      if (self.debug) {
+        this.app.use(url, debugMiddleware)
+      }
+      // we automatically bound any route
+      // to ensure a functional fiber running
+      // and to support Meteor and Mongo features
+      this.app.use(url, bind(function (req, res, next) {
+        const that = this
+        try {
+          handler.call(that, req, res, next)
+        } catch (unknownException) {
+          const state = req && req.query && req.query.state
+          errorHandler(res, {
+            error: 'server_error',
+            status: 500,
+            description: 'An internal server error occurred',
+            state
+          })
+        }
+      }))
     }
 
     route(accessTokenUrl, function (req, res, next) {
@@ -133,24 +201,44 @@ export const OAuth2Server = class OAuth2Server {
         })
     })
 
-    route(authorizeUrl, bind(function (req, res, next) {
-      console.log('authorize client', req.query.client_id)
+    // https://www.oauth.com/oauth2-servers/authorization/the-authorization-response/
+    // If there is something wrong with the syntax of the request, such as the redirect_uri or client_id is invalid,
+    // then it’s important not to redirect the user and instead you should show the error message directly.
+    // This is to avoid letting your authorization server be used as an open redirector.
+    route(authorizeUrl, function (req, res, next) {
+      if (!validate(req.query, requiredAuthorizeParams)) {
+        return errorHandler(res, {
+          error: 'invalid_request',
+          description: 'One or more request parameters are invalid',
+          state: req.query.state
+        })
+      }
+      throw new Error('sdaasdasd')
 
-      const client = self.model.getClient({ active: true, clientId: req.query.client_id })
+      const client = Promise.await(self.model.getClient({ active: true, clientId: req.query.client_id }))
+      console.log(client)
       if (!client) {
-        res.writeHead(404)
-        return res.end()
-        // return res.redirect(`${errorUrl}/404`)
+        // unauthorized_client - The client is not authorized to request an authorization code using this method.
+        return errorHandler(res, {
+          error: 'unauthorized_client',
+          description: 'This client is not authorized to use this service',
+          state: req.query.state
+        })
       }
 
       if (![].concat(client.redirectUri).includes(req.query.redirect_uri)) {
-        return res.redirect('/oauth/error/invalid_redirect_uri')
+        // invalid_request
+        return errorHandler(res, {
+          error: 'invalid_request',
+          description: 'Invalid redirect URI',
+          state: req.query.state
+        })
       }
 
       return next()
-    }))
+    })
 
-    route(authorizeUrl, bind(function (req, res, next) {
+    route(authorizeUrl, function (req, res, next) {
       if ((!req.body.token)) {
         return res.sendStatus(401).send('No token')
       }
@@ -165,15 +253,15 @@ export const OAuth2Server = class OAuth2Server {
 
       req.user = { id: user._id }
       return next()
-    }))
+    })
 
-    route(authorizeUrl, bind(function (req, next) {
+    route(authorizeUrl, function (req, next) {
       if (req.body.allow === 'yes') {
         Meteor.users.update(req.user.id, { $addToSet: { 'oauth.authorizedClients': this.clientId } })
       }
 
       return next(null, req.body.allow === 'yes', req.user)
-    }))
+    })
 
     route(fallbackUrl, errorHandler)
   }
