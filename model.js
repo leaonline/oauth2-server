@@ -55,7 +55,7 @@ function OAuthMeteorModel (config = {}) {
 OAuthMeteorModel.prototype.getAccessToken = bind(function (bearerToken) {
   return new Promise((resolve, reject) => {
     if (debug === true) {
-      console.log('[OAuth2Server]', 'in getAccessToken (bearerToken:', bearerToken, ')')
+      console.log('[OAuth2Server]', 'model::getAccessToken (bearerToken:', bearerToken, ')')
     }
 
     try {
@@ -81,7 +81,7 @@ OAuthMeteorModel.prototype.createClient = bind(function ({ title, homepage, desc
 OAuthMeteorModel.prototype.getClient = bind(function (clientId, clientSecret) {
   return new Promise((resolve, reject) => {
     if (debug === true) {
-      console.log('[OAuth2Server]', 'in getClient (clientId:', clientId, ', clientSecret:', clientSecret, ')')
+      console.log('[OAuth2Server]', 'model::getClient (clientId:', clientId, ', clientSecret:', clientSecret, ')')
     }
 
     try {
@@ -110,7 +110,7 @@ OAuthMeteorModel.prototype.getClient = bind(function (clientId, clientSecret) {
 OAuthMeteorModel.prototype.saveToken = bind(function (token, clientId, expires, user) {
   return new Promise((resolve, reject) => {
     if (debug === true) {
-      console.log('[OAuth2Server]', 'in saveAccessToken (token:', token, ', clientId:', clientId, ', user:', user, ', expires:', expires, ')')
+      console.log('[OAuth2Server]', 'model::saveAccessToken (token:', token, ', clientId:', clientId, ', user:', user, ', expires:', expires, ')')
     }
 
     try {
@@ -138,7 +138,7 @@ OAuthMeteorModel.prototype.saveToken = bind(function (token, clientId, expires, 
 OAuthMeteorModel.prototype.getAuthorizationCode = bind(function (authCode) {
   return new Promise((resolve, reject) => {
     if (debug === true) {
-      console.log('[OAuth2Server]', 'in getAuthCode (authCode: ' + authCode + ')')
+      console.log('[OAuth2Server]', 'model::getAuthCode (authCode: ' + authCode + ')')
     }
 
     try {
@@ -157,7 +157,7 @@ OAuthMeteorModel.prototype.getAuthorizationCode = bind(function (authCode) {
 OAuthMeteorModel.prototype.saveAuthorizationCode = bind(function (code, clientId, expires, user) {
   return new Promise((resolve, reject) => {
     if (debug === true) {
-      console.log('[OAuth2Server]', 'in saveAuthCode (code:', code, ', clientId:', clientId, ', expires:', expires, ', user:', user, ')')
+      console.log('[OAuth2Server]', 'model::saveAuthCode (code:', code, ', clientId:', clientId, ', expires:', expires, ', user:', user, ')')
     }
 
     try {
@@ -181,7 +181,7 @@ OAuthMeteorModel.prototype.saveAuthorizationCode = bind(function (code, clientId
 OAuthMeteorModel.prototype.saveRefreshToken = bind(function (token, clientId, expires, user) {
   return new Promise((resolve, reject) => {
     if (debug === true) {
-      console.log('[OAuth2Server]', 'in saveRefreshToken (token:', token, ', clientId:', clientId, ', user:', user, ', expires:', expires, ')')
+      console.log('[OAuth2Server]', 'model::saveRefreshToken (token:', token, ', clientId:', clientId, ', user:', user, ', expires:', expires, ')')
     }
 
     try {
@@ -210,7 +210,7 @@ OAuthMeteorModel.prototype.saveRefreshToken = bind(function (token, clientId, ex
 OAuthMeteorModel.prototype.getRefreshToken = bind(function (refreshToken) {
   return new Promise((resolve, reject) => {
     if (debug === true) {
-      console.log('[OAuth2Server]', 'in getRefreshToken (refreshToken: ' + refreshToken + ')')
+      console.log('[OAuth2Server]', 'model::getRefreshToken (refreshToken: ' + refreshToken + ')')
     }
 
     try {
@@ -225,7 +225,7 @@ OAuthMeteorModel.prototype.getRefreshToken = bind(function (refreshToken) {
 OAuthMeteorModel.prototype.grantTypeAllowed = function (clientId, grantType) {
   return new Promise((resolve) => {
     if (debug === true) {
-      console.log('[OAuth2Server]', 'in grantTypeAllowed (clientId:', clientId, ', grantType:', grantType + ')')
+      console.log('[OAuth2Server]', 'model::grantTypeAllowed (clientId:', clientId, ', grantType:', grantType + ')')
     }
     return resolve([ 'authorization_code', 'refresh_token' ].includes(grantType))
   })
