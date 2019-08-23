@@ -68,9 +68,13 @@ OAuthMeteorModel.prototype.getAccessToken = bind(function (bearerToken) {
 })
 
 OAuthMeteorModel.prototype.createClient = bind(function ({ title, homepage, description, privacyLink, redirectUris }) {
-  const clientId = Random.id(32)
+  if (Clients.findOne({ title, homepage })) {
+    return null
+  }
+  const clientId = Random.id(16)
   const secret = Random.id(32)
-  return Clients.insert({ title, homepage, description, privacyLink, redirectUris, clientId, secret })
+  const clientDocId = Clients.insert({ title, homepage, description, privacyLink, redirectUris, clientId, secret })
+  return Clients.findOne(clientDocId)
 })
 
 /**
@@ -78,20 +82,14 @@ OAuthMeteorModel.prototype.createClient = bind(function ({ title, homepage, desc
  redirectUris (Array)
  grants (Array)
  */
-OAuthMeteorModel.prototype.getClient = bind(function (clientId, clientSecret) {
+OAuthMeteorModel.prototype.getClient = bind(function (clientId) {
   return new Promise((resolve, reject) => {
     if (debug === true) {
-      console.log('[OAuth2Server]', 'model::getClient (clientId:', clientId, ', clientSecret:', clientSecret, ')')
+      console.log(`[OAuth2Server] model::getClient (clientId: ${clientId})`)
     }
 
     try {
-      let client
-      if ((clientSecret == null)) {
-        client = Clients.findOne({ active: true, clientId })
-      } else {
-        client = Clients.findOne({ active: true, clientId, clientSecret })
-      }
-      return resolve(client)
+      return resolve(Clients.findOne({ clientId }))
     } catch (e) {
       return reject(e)
     }
