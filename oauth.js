@@ -1,8 +1,8 @@
-/* global Accounts */
+/* global Accounts, Npm */
 import { Meteor } from 'meteor/meteor'
-import { check } from 'meteor/check'
 import { WebApp } from 'meteor/webapp'
 import { Model } from './model'
+import { validate, requiredAuthorizeGetParams } from './validation'
 
 const bodyParser = Npm.require('body-parser')
 const OAuthserver = Npm.require('oauth2-server')
@@ -12,32 +12,36 @@ const bind = fn => Meteor.bindEnvironment(fn)
 const { Request } = OAuthserver
 const { Response } = OAuthserver
 
-const requiredAuthorizeParams = {
-  response_type: String,
-  client_id: String,
-  scope: String,
-  redirect_uri: String,
-  state: String
+const _app = WebApp.connectHandlers
+
+_app.use(bodyParser.urlencoded({ extended: false }))
+
+_app.get = (url, handler) => {
+  _app.use(url, function (req, res, next) {
+    if (req.method.toLowerCase() === 'get') {
+      handler.call(this, req, res, next)
+    } else {
+      next()
+    }
+  })
 }
 
-const validate = (actualParams, requiredParams) => {
-  if (!actualParams || !requiredParams) {
-    return false
-  }
-  try {
-    let expected, actual
-    return Object.keys(requiredParams).every(requiredParamKey => {
-      actual = actualParams[ requiredParamKey ]
-      expected = requiredParams[ requiredParamKey ]
-      check(actual, expected)
-      return true
-    })
-  } catch (e) {
-    return false
-  }
+_app.post = (url, handler) => {
+  _app.use(url, function (req, res, next) {
+    if (req.method.toLowerCase() === 'post') {
+      if (req.headers[ 'content-type' ] !== 'application/x-www-form-urlencoded') {
+        // Transforms requests which are POST and aren't "x-www-form-urlencoded" content type
+        // and they pass the required information as query strings
+        console.log('[OAuth2Server]', 'Transforming a request to form-urlencoded with the query going to the body.')
+        req.headers[ 'content-type' ] = 'application/x-www-form-urlencoded'
+        req.body = Object.assign({}, req.body, req.query)
+      }
+      handler.call(this, req, res, next)
+    } else {
+      next()
+    }
+  })
 }
-
-WebApp.connectHandlers.use(bodyParser.urlencoded({ extended: false }))
 
 const getDebugMiddleWare = instance => (req, res, next) => {
   if (instance.debug === true) {
@@ -49,21 +53,10 @@ const getDebugMiddleWare = instance => (req, res, next) => {
 const publishAuhorizedClients = (pubName) => {
   return Meteor.publish(pubName, function () {
     if (!this.userId) {
-      console.log('resolve not logged in')
       return this.ready()
     }
     return Meteor.users.find({ _id: this.userId }, { fields: { 'oauth.authorizedClients': 1 } })
   })
-}
-
-const redirect = function (res, url, status) {
-  const body = 'Goodbye cruel localhost'
-  res.writeHead(status || 301, {
-    'Location': url,
-    'Content-Length': body.length,
-    'Content-Type': 'text/plain'
-  })
-  res.end(body)
 }
 
 const errorHandler = function (res, { error, description, uri, status, state }) {
@@ -82,7 +75,7 @@ export const OAuth2Server = class OAuth2Server {
   constructor ({ serverOptions, model, routes, debug }) {
     this.config = { serverOptions, model, routes }
     this.model = new Model(model)
-    this.app = WebApp.connectHandlers
+    this.app = _app
     this.debug = debug
 
     const oauthOptions = Object.assign({ model: this.model }, serverOptions)
@@ -148,27 +141,16 @@ export const OAuth2Server = class OAuth2Server {
     const self = this
     const debugMiddleware = getDebugMiddleWare(self)
 
-    // Transforms requests which are POST and aren't "x-www-form-urlencoded" content type
-    // and they pass the required information as query strings
-    const transformRequestsNotUsingFormUrlencodedType = function (req, res, next) {
-      if (!req.is('application/x-www-form-urlencoded') && (req.method === 'POST')) {
-        if (self.debug === true) {
-          console.log('[OAuth2Server]', 'Transforming a request to form-urlencoded with the query going to the body.')
-        }
-        req.headers[ 'content-type' ] = 'application/x-www-form-urlencoded'
-        req.body = Object.assign({}, req.body, req.query)
-      }
-      return next()
-    }
-
-    const route = (url, handler) => {
+    const route = (method, url, handler) => {
+      const targetFn = this.app[ method ]
       if (self.debug) {
-        this.app.use(url, debugMiddleware)
+        targetFn.call(this.app, url, debugMiddleware)
       }
+
       // we automatically bound any route
       // to ensure a functional fiber running
       // and to support Meteor and Mongo features
-      this.app.use(url, bind(function (req, res, next) {
+      targetFn.call(this.app, url, bind(function (req, res, next) {
         const that = this
         try {
           handler.call(that, req, res, next)
@@ -184,39 +166,20 @@ export const OAuth2Server = class OAuth2Server {
       }))
     }
 
-    route(accessTokenUrl, function (req, res, next) {
-      console.log('access token handler')
-      let request = new Request(req)
-      let response = new Response(res)
-      return this.oauth.token(request, response)
-        .then(function (token) {
-          console.log('token generated')
-          console.log(token)
-          res.locals.oauth = { token: token }
-          next()
-        })
-        .catch(function (err) {
-          // handle error condition
-          console.error(err)
-        })
-    })
-
-    // https://www.oauth.com/oauth2-servers/authorization/the-authorization-response/
+    // Note from https://www.oauth.com/oauth2-servers/authorization/the-authorization-response/
     // If there is something wrong with the syntax of the request, such as the redirect_uri or client_id is invalid,
     // then it’s important not to redirect the user and instead you should show the error message directly.
     // This is to avoid letting your authorization server be used as an open redirector.
-    route(authorizeUrl, function (req, res, next) {
-      if (!validate(req.query, requiredAuthorizeParams)) {
+    route('get', authorizeUrl, function (req, res, next) {
+      if (!validate(req.query, requiredAuthorizeGetParams)) {
         return errorHandler(res, {
           error: 'invalid_request',
           description: 'One or more request parameters are invalid',
           state: req.query.state
         })
       }
-      throw new Error('sdaasdasd')
 
-      const client = Promise.await(self.model.getClient({ active: true, clientId: req.query.client_id }))
-      console.log(client)
+      const client = Promise.await(self.model.getClient(req.query.client_id))
       if (!client) {
         // unauthorized_client - The client is not authorized to request an authorization code using this method.
         return errorHandler(res, {
@@ -226,8 +189,8 @@ export const OAuth2Server = class OAuth2Server {
         })
       }
 
-      if (![].concat(client.redirectUri).includes(req.query.redirect_uri)) {
-        // invalid_request
+      const redirectUris = [].concat(client.redirectUris)
+      if (redirectUris.indexOf(req.query.redirect_uri) === -1) {
         return errorHandler(res, {
           error: 'invalid_request',
           description: 'Invalid redirect URI',
@@ -238,8 +201,8 @@ export const OAuth2Server = class OAuth2Server {
       return next()
     })
 
-    route(authorizeUrl, function (req, res, next) {
-      if ((!req.body.token)) {
+    route('post', authorizeUrl, function (req, res, next) {
+      if (!req.body.token) {
         return res.sendStatus(401).send('No token')
       }
 
@@ -255,7 +218,7 @@ export const OAuth2Server = class OAuth2Server {
       return next()
     })
 
-    route(authorizeUrl, function (req, next) {
+    route('post', authorizeUrl, function (req, next) {
       if (req.body.allow === 'yes') {
         Meteor.users.update(req.user.id, { $addToSet: { 'oauth.authorizedClients': this.clientId } })
       }
@@ -263,6 +226,24 @@ export const OAuth2Server = class OAuth2Server {
       return next(null, req.body.allow === 'yes', req.user)
     })
 
-    route(fallbackUrl, errorHandler)
+    route('use', accessTokenUrl, function (req, res, next) {
+      let request = new Request(req)
+      let response = new Response(res)
+      return this.oauth.token(request, response)
+        .then(function (token) {
+          console.log('token generated')
+          console.log(token)
+          res.locals.oauth = { token: token }
+          next()
+        })
+        .catch(function (err) {
+          // handle error condition
+          console.error(err)
+        })
+    })
+
+    route('use', fallbackUrl, function (req, res, next) {
+      return errorHandler(res, { error: 'route not found', status: 404 })
+    })
   }
 }
