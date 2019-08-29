@@ -98,6 +98,35 @@ export const OAuth2Server = class OAuth2Server {
     const self = this
     const debugMiddleware = getDebugMiddleWare(self)
 
+    const getValidatedClient = (req, res) => {
+      const clientId = req.method.toLowerCase() === 'get' ? req.query.client_id : req.body.client_id
+      const client = Promise.await(self.model.getClient(clientId))
+      if (!client) {
+        // unauthorized_client - The client is not authorized to request an authorization code using this method.
+        return errorHandler(res, {
+          error: 'unauthorized_client',
+          description: 'This client is not authorized to use this service',
+          state: req.query.state,
+          debug: self.debug
+        })
+      }
+      return client
+    }
+
+    const getValidatedRedirectUri = (req, res, client) => {
+      const redirectUris = [].concat(client.redirectUris)
+      const redirectUri = req.method.toLowerCase() === 'get' ? req.query.redirect_uri : req.body.redirect_uri
+      if (redirectUris.indexOf(redirectUri) === -1) {
+        return errorHandler(res, {
+          error: 'invalid_request',
+          description: 'Invalid redirect URI',
+          state: req.query.state,
+          debug: self.debug
+        })
+      }
+      return redirectUri
+    }
+
     const route = (method, url, handler) => {
       const targetFn = this.app[ method ]
       if (self.debug) {
@@ -139,28 +168,8 @@ export const OAuth2Server = class OAuth2Server {
           debug: self.debug
         })
       }
-
-      const client = Promise.await(self.model.getClient(req.query.client_id))
-      if (!client) {
-        // unauthorized_client - The client is not authorized to request an authorization code using this method.
-        return errorHandler(res, {
-          error: 'unauthorized_client',
-          description: 'This client is not authorized to use this service',
-          state: req.query.state,
-          debug: self.debug
-        })
-      }
-
-      const redirectUris = [].concat(client.redirectUris)
-      if (redirectUris.indexOf(req.query.redirect_uri) === -1) {
-        return errorHandler(res, {
-          error: 'invalid_request',
-          description: 'Invalid redirect URI',
-          state: req.query.state,
-          debug: self.debug
-        })
-      }
-
+      const client = getValidatedClient(req, res)
+      getValidatedRedirectUri(req, res, client)
       return next()
     })
 
@@ -176,6 +185,9 @@ export const OAuth2Server = class OAuth2Server {
           debug: self.debug
         })
       }
+
+      const client = getValidatedClient(req, res)
+      const redirectUrl = getValidatedRedirectUri(req, res, client)
 
       if (!req.body.token) {
         return errorHandler(res, {
@@ -205,7 +217,7 @@ export const OAuth2Server = class OAuth2Server {
       return next()
     })
 
-    route('post', authorizeUrl, function (req, next) {
+    route('post', authorizeUrl, function (req, res, next) {
       if (req.body.allow === 'yes') {
         const clientId = req.query.client_id
         Meteor.users.update(req.user.id, { $addToSet: { 'oauth.authorizedClients': clientId } })
