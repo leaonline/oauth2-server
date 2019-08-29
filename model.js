@@ -162,22 +162,18 @@ OAuthMeteorModel.prototype.getAuthorizationCode = bind(function (authCode) {
  saveAuthorizationCode(code, client, user) and should return:
  authorizationCode (String)
  */
-OAuthMeteorModel.prototype.saveAuthorizationCode = bind(function (code, clientId, expires, user) {
+OAuthMeteorModel.prototype.saveAuthorizationCode = bind(function (code, clientId, user) {
   return new Promise((resolve, reject) => {
     if (debug === true) {
-      console.log('[OAuth2Server]', 'MODEL saveAuthCode (code:', code, ', clientId:', clientId, ', expires:', expires, ', user:', user, ')')
+      console.log(`[OAuth2Server] MODEL saveAuthCode (code: ${code} clientId: ${clientId} user: ${user}`)
     }
 
     try {
-      const codeId = AuthCodes.upsert(
-        { authCode: code }
-        , {
-          authCode: code,
-          clientId,
-          userId: user.id,
-          expires
-        }
-      )
+      const codeId = AuthCodes.upsert({ authCode: code }, {
+        authCode: code,
+        clientId,
+        userId: user.id
+      })
 
       return resolve(codeId)
     } catch (e) {
