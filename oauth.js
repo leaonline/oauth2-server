@@ -1,47 +1,15 @@
 /* global Accounts, Npm */
 import { Meteor } from 'meteor/meteor'
-import { WebApp } from 'meteor/webapp'
 import { Model } from './model'
 import { validate, requiredAuthorizeGetParams } from './validation'
+import { app, get, post } from './webapp'
 
-const bodyParser = Npm.require('body-parser')
 const OAuthserver = Npm.require('oauth2-server')
 
 const bind = fn => Meteor.bindEnvironment(fn)
 
 const { Request } = OAuthserver
 const { Response } = OAuthserver
-
-const _app = WebApp.connectHandlers
-
-_app.use(bodyParser.urlencoded({ extended: false }))
-
-_app.get = (url, handler) => {
-  _app.use(url, function (req, res, next) {
-    if (req.method.toLowerCase() === 'get') {
-      handler.call(this, req, res, next)
-    } else {
-      next()
-    }
-  })
-}
-
-_app.post = (url, handler) => {
-  _app.use(url, function (req, res, next) {
-    if (req.method.toLowerCase() === 'post') {
-      if (req.headers[ 'content-type' ] !== 'application/x-www-form-urlencoded') {
-        // Transforms requests which are POST and aren't "x-www-form-urlencoded" content type
-        // and they pass the required information as query strings
-        console.log('[OAuth2Server]', 'Transforming a request to form-urlencoded with the query going to the body.')
-        req.headers[ 'content-type' ] = 'application/x-www-form-urlencoded'
-        req.body = Object.assign({}, req.body, req.query)
-      }
-      handler.call(this, req, res, next)
-    } else {
-      next()
-    }
-  })
-}
 
 const getDebugMiddleWare = instance => (req, res, next) => {
   if (instance.debug === true) {
@@ -75,7 +43,7 @@ export const OAuth2Server = class OAuth2Server {
   constructor ({ serverOptions, model, routes, debug }) {
     this.config = { serverOptions, model, routes }
     this.model = new Model(model)
-    this.app = _app
+    this.app = app
     this.debug = debug
 
     const oauthOptions = Object.assign({ model: this.model }, serverOptions)
