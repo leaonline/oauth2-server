@@ -14,7 +14,8 @@ const { Response } = OAuthserver
 
 const getDebugMiddleWare = instance => (req, res, next) => {
   if (instance.debug === true) {
-    console.log('[OAuth2Server]', req.method, req.url, req.params, req.body)
+    const baseUrl = req.originalUrl.split('?')[ 0 ]
+    console.log('[OAuth2Server]', req.method, baseUrl, req.query || req.body)
   }
   return next()
 }
@@ -53,8 +54,8 @@ export const OAuth2Server = class OAuth2Server {
    * @param redirectUris
    * @returns {}
    */
-  registerClient ({ title, homepage, description, privacyLink, redirectUris }) {
-    return this.model.createClient({ title, homepage, description, privacyLink, redirectUris })
+  registerClient ({ title, homepage, description, privacyLink, redirectUris, grants }) {
+    return this.model.createClient({ title, homepage, description, privacyLink, redirectUris, grants })
   }
 
   authorizeHandler (options) {
@@ -90,8 +91,16 @@ export const OAuth2Server = class OAuth2Server {
     }
   }
 
-  authenticatedRoute (route, fn) {
-    return this.app.use(route, getDebugMiddleWare(this), this.authenticateHandler(), fn)
+  authenticatedRoute () {
+    const self = this
+    return {
+      get (route, fn) {
+        return app.get(route, getDebugMiddleWare(self), self.authenticateHandler(), fn)
+      },
+      post (route, fn) {
+        return app.post(route, getDebugMiddleWare(self), self.authenticateHandler(), fn)
+      }
+    }
   }
 
   initRoutes ({ accessTokenUrl = '/oauth/token', authorizeUrl = '/oauth/authorize', errorUrl = '/oauth/error', fallbackUrl = '/oauth/*' } = {}) {
@@ -154,6 +163,22 @@ export const OAuth2Server = class OAuth2Server {
       }))
     }
 
+    route('use', accessTokenUrl, function (req, res, next) {
+      let request = new Request(req)
+      let response = new Response(res)
+      return this.oauth.token(request, response)
+        .then(function (token) {
+          console.log('token generated')
+          console.log(token)
+          res.locals.oauth = { token: token }
+          next()
+        })
+        .catch(function (err) {
+          // handle error condition
+          console.error(err)
+        })
+    })
+
     // STEP 1: VALIDATE CLIENT REQUEST
     // Note from https://www.oauth.com/oauth2-servers/authorization/the-authorization-response/
     // If there is something wrong with the syntax of the request, such as the redirect_uri or client_id is invalid,
@@ -187,7 +212,7 @@ export const OAuth2Server = class OAuth2Server {
       }
 
       const client = getValidatedClient(req, res)
-      const redirectUrl = getValidatedRedirectUri(req, res, client)
+      getValidatedRedirectUri(req, res, client)
 
       if (!req.body.token) {
         return errorHandler(res, {
@@ -218,27 +243,29 @@ export const OAuth2Server = class OAuth2Server {
     })
 
     route('post', authorizeUrl, function (req, res, next) {
-      if (req.body.allow === 'yes') {
-        const clientId = req.query.client_id
-        Meteor.users.update(req.user.id, { $addToSet: { 'oauth.authorizedClients': clientId } })
+      const request = new Request(req)
+      const response = new Response(res)
+      const authorizeOptions = {
+        authenticateHandler: {
+          handle (request, response) {
+            return req.user
+          }
+        }
       }
 
-      return next(null, req.body.allow === 'yes', req.user)
-    })
-
-    route('use', accessTokenUrl, function (req, res, next) {
-      let request = new Request(req)
-      let response = new Response(res)
-      return this.oauth.token(request, response)
-        .then(function (token) {
-          console.log('token generated')
-          console.log(token)
-          res.locals.oauth = { token: token }
+      return self.oauth.authorize(request, response, authorizeOptions)
+        .then(bind(function (code) {
+          const clientId = req.body.client_id
+          if (req.body.allow === 'yes') {
+            console.log('update authorized clients')
+            Meteor.users.update(req.user.id, { $addToSet: { 'oauth.authorizedClients': clientId } })
+          } else {
+            Meteor.users.update(req.user.id, { $pull: { 'oauth.authorizedClients': clientId } })
+          }
           next()
-        })
+        }))
         .catch(function (err) {
-          // handle error condition
-          console.error(err)
+          errorHandler(res, { error: err.message, originalError: err })
         })
     })
 
