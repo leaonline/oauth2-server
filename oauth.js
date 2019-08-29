@@ -5,6 +5,7 @@ import { validate, requiredAuthorizeGetParams, requiredAuthorizePostParams } fro
 import { app } from './webapp'
 import { errorHandler } from './error'
 
+const URLSearchParams = require('url').URLSearchParams
 const OAuthserver = Npm.require('oauth2-server')
 
 const bind = fn => Meteor.bindEnvironment(fn)
@@ -262,7 +263,15 @@ export const OAuth2Server = class OAuth2Server {
           } else {
             Meteor.users.update(req.user.id, { $pull: { 'oauth.authorizedClients': clientId } })
           }
-          next()
+
+          const query = new URLSearchParams({
+            code: code.authorizationCode,
+            user: req.user.id,
+            state: req.body.state
+          })
+          const finalRedirectUri = `${req.body.redirect_uri}?${query}`
+          res.writeHead(302, { 'Location': finalRedirectUri })
+          res.end()
         }))
         .catch(function (err) {
           errorHandler(res, { error: err.message, originalError: err })
