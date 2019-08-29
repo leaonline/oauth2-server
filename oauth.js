@@ -3,6 +3,7 @@ import { Meteor } from 'meteor/meteor'
 import { Model } from './model'
 import { validate, requiredAuthorizeGetParams } from './validation'
 import { app } from './webapp'
+import { errorHandler } from './error'
 
 const OAuthserver = Npm.require('oauth2-server')
 
@@ -25,18 +26,6 @@ const publishAuhorizedClients = (pubName) => {
     }
     return Meteor.users.find({ _id: this.userId }, { fields: { 'oauth.authorizedClients': 1 } })
   })
-}
-
-const errorHandler = function (res, { error, description, uri, status, state }) {
-  const errCode = status || 500
-  res.writeHead(errCode, { 'Content-Type': 'application/json' })
-  const body = JSON.stringify({
-    error,
-    error_description: description,
-    error_uri: uri,
-    state
-  }, null, 2)
-  res.end(body)
 }
 
 export const OAuth2Server = class OAuth2Server {
@@ -128,12 +117,15 @@ export const OAuth2Server = class OAuth2Server {
             error: 'server_error',
             status: 500,
             description: 'An internal server error occurred',
-            state
+            state,
+            debug: self.debug,
+            originalError: unknownException
           })
         }
       }))
     }
 
+    // STEP 1: VALIDATE CLIENT REQUEST
     // Note from https://www.oauth.com/oauth2-servers/authorization/the-authorization-response/
     // If there is something wrong with the syntax of the request, such as the redirect_uri or client_id is invalid,
     // then it’s important not to redirect the user and instead you should show the error message directly.
@@ -143,7 +135,8 @@ export const OAuth2Server = class OAuth2Server {
         return errorHandler(res, {
           error: 'invalid_request',
           description: 'One or more request parameters are invalid',
-          state: req.query.state
+          state: req.query.state,
+          debug: self.debug
         })
       }
 
@@ -153,7 +146,8 @@ export const OAuth2Server = class OAuth2Server {
         return errorHandler(res, {
           error: 'unauthorized_client',
           description: 'This client is not authorized to use this service',
-          state: req.query.state
+          state: req.query.state,
+          debug: self.debug
         })
       }
 
@@ -162,13 +156,17 @@ export const OAuth2Server = class OAuth2Server {
         return errorHandler(res, {
           error: 'invalid_request',
           description: 'Invalid redirect URI',
-          state: req.query.state
+          state: req.query.state,
+          debug: self.debug
         })
       }
 
       return next()
     })
 
+    // STEP 2: ADD USER TO THE REQUEST
+    // error out if user not found, e.g. a cold false token attemp
+    // via the form
     route('post', authorizeUrl, function (req, res, next) {
       if (!req.body.token) {
         return res.sendStatus(401).send('No token')
@@ -178,7 +176,7 @@ export const OAuth2Server = class OAuth2Server {
         'services.resume.loginTokens.hashedToken': Accounts._hashLoginToken(req.body.token)
       })
 
-      if ((user == null)) {
+      if (!user) {
         return res.sendStatus(401).send('Invalid token')
       }
 
@@ -211,7 +209,7 @@ export const OAuth2Server = class OAuth2Server {
     })
 
     route('use', fallbackUrl, function (req, res, next) {
-      return errorHandler(res, { error: 'route not found', status: 404 })
+      return errorHandler(res, { error: 'route not found', status: 404, debug: self.debug })
     })
   }
 }
