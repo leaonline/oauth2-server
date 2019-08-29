@@ -93,17 +93,10 @@ OAuthMeteorModel.prototype.createClient = bind(function ({ title, homepage, desc
  grants (Array)
  */
 OAuthMeteorModel.prototype.getClient = bind(function (clientId) {
-  return new Promise((resolve, reject) => {
-    if (debug === true) {
-      console.log(`[OAuth2Server] MODEL getClient (clientId: ${clientId})`)
-    }
-
-    try {
-      return resolve(Clients.findOne({ clientId }))
-    } catch (e) {
-      return reject(e)
-    }
-  })
+  if (debug === true) {
+    console.log(`[OAuth2Server] MODEL getClient (clientId: ${clientId})`)
+  }
+  return Clients.findOne({ clientId })
 })
 
 /**
@@ -116,23 +109,15 @@ OAuthMeteorModel.prototype.getClient = bind(function (clientId) {
  user (Object)
  */
 OAuthMeteorModel.prototype.saveToken = bind(function (token, clientId, expires, user) {
-  return new Promise((resolve, reject) => {
-    if (debug === true) {
-      console.log('[OAuth2Server]', 'MODEL saveAccessToken (token:', token, ', clientId:', clientId, ', user:', user, ', expires:', expires, ')')
-    }
+  if (debug === true) {
+    console.log('[OAuth2Server]', 'MODEL saveAccessToken (token:', token, ', clientId:', clientId, ', user:', user, ', expires:', expires, ')')
+  }
 
-    try {
-      const tokenId = AccessTokens.insert({
-        accessToken: token,
-        clientId,
-        userId: user.id,
-        expires
-      })
-
-      return resolve(tokenId)
-    } catch (e) {
-      return reject(e)
-    }
+  return AccessTokens.insert({
+    accessToken: token,
+    clientId,
+    userId: user.id,
+    expires
   })
 })
 
@@ -144,62 +129,44 @@ OAuthMeteorModel.prototype.saveToken = bind(function (token, clientId, expires, 
  user (Object)
  */
 OAuthMeteorModel.prototype.getAuthorizationCode = bind(function (authCode) {
-  return new Promise((resolve, reject) => {
-    if (debug === true) {
-      console.log('[OAuth2Server]', 'MODEL getAuthCode (authCode: ' + authCode + ')')
-    }
-
-    try {
-      const code = AuthCodes.findOne({ authCode })
-      return resolve(code)
-    } catch (e) {
-      return reject(e)
-    }
-  })
+  if (debug === true) {
+    console.log('[OAuth2Server]', 'MODEL getAuthCode (authCode: ' + authCode + ')')
+  }
+  return AuthCodes.findOne({ authCode })
 })
 
 /**
  saveAuthorizationCode(code, client, user) and should return:
- authorizationCode (String)
+ An Object representing the authorization code and associated data.
  */
-OAuthMeteorModel.prototype.saveAuthorizationCode = bind(function (code, clientId, user) {
-  return new Promise((resolve, reject) => {
-    if (debug === true) {
-      console.log(`[OAuth2Server] MODEL saveAuthCode (code: ${code} clientId: ${clientId} user: ${user}`)
-    }
-
-    try {
-      const codeId = AuthCodes.upsert({ authCode: code }, {
-        authCode: code,
-        clientId,
-        userId: user.id
-      })
-
-      return resolve(codeId)
-    } catch (e) {
-      return reject(e)
-    }
-  })
+OAuthMeteorModel.prototype.saveAuthorizationCode = bind(function (code, client, user) {
+  if (debug === true) {
+    console.log(`[OAuth2Server] MODEL saveAuthCode (code:`, code, `clientId: `, client, `user: `, user, `)`)
+  }
+  try {
+    const { authorizationCode } = code
+    const codeId = AuthCodes.upsert({ authorizationCode }, {
+      authorizationCode,
+      client,
+      userId: user.id
+    })
+    const codeDoc = Object.assign({}, code, { client: { id: client._id }, user })
+    console.log(codeDoc)
+    return codeDoc
+  } catch (e) {
+    throw e
+  }
 })
 
 OAuthMeteorModel.prototype.saveRefreshToken = bind(function (token, clientId, expires, user) {
-  return new Promise((resolve, reject) => {
-    if (debug === true) {
-      console.log('[OAuth2Server]', 'MODEL saveRefreshToken (token:', token, ', clientId:', clientId, ', user:', user, ', expires:', expires, ')')
-    }
-
-    try {
-      const tokenId = RefreshTokens.insert({
-        refreshToken: token,
-        clientId,
-        userId: user.id,
-        expires
-      })
-
-      return resolve(tokenId)
-    } catch (e) {
-      return reject(e)
-    }
+  if (debug === true) {
+    console.log('[OAuth2Server]', 'MODEL saveRefreshToken (token:', token, ', clientId:', clientId, ', user:', user, ', expires:', expires, ')')
+  }
+  return RefreshTokens.insert({
+    refreshToken: token,
+    clientId,
+    userId: user.id,
+    expires
   })
 })
 
@@ -212,27 +179,17 @@ OAuthMeteorModel.prototype.saveRefreshToken = bind(function (token, clientId, ex
  user (Object)
  */
 OAuthMeteorModel.prototype.getRefreshToken = bind(function (refreshToken) {
-  return new Promise((resolve, reject) => {
-    if (debug === true) {
-      console.log('[OAuth2Server]', 'MODEL getRefreshToken (refreshToken: ' + refreshToken + ')')
-    }
-
-    try {
-      const token = RefreshTokens.findOne({ refreshToken })
-      return resolve(token)
-    } catch (e) {
-      return reject(e)
-    }
-  })
+  if (debug === true) {
+    console.log('[OAuth2Server]', 'MODEL getRefreshToken (refreshToken: ' + refreshToken + ')')
+  }
+  return RefreshTokens.findOne({ refreshToken })
 })
 
 OAuthMeteorModel.prototype.grantTypeAllowed = function (clientId, grantType) {
-  return new Promise((resolve) => {
-    if (debug === true) {
-      console.log('[OAuth2Server]', 'MODEL grantTypeAllowed (clientId:', clientId, ', grantType:', grantType + ')')
-    }
-    return resolve([ 'authorization_code', 'refresh_token' ].includes(grantType))
-  })
+  if (debug === true) {
+    console.log('[OAuth2Server]', 'MODEL grantTypeAllowed (clientId:', clientId, ', grantType:', grantType + ')')
+  }
+  return [ 'authorization_code', 'refresh_token' ].includes(grantType)
 }
 
 export const Model = OAuthMeteorModel
