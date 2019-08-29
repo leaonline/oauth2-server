@@ -2,7 +2,7 @@
 import { Meteor } from 'meteor/meteor'
 import { Model } from './model'
 import { validate, requiredAuthorizeGetParams } from './validation'
-import { app, get, post } from './webapp'
+import { app } from './webapp'
 
 const OAuthserver = Npm.require('oauth2-server')
 
