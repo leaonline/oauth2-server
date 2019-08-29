@@ -128,35 +128,39 @@ OAuthMeteorModel.prototype.saveToken = bind(function (token, clientId, expires, 
  redirectUri (optional String)
  user (Object)
  */
-OAuthMeteorModel.prototype.getAuthorizationCode = bind(function (authCode) {
+OAuthMeteorModel.prototype.getAuthorizationCode = bind(function (authorizationCode) {
   if (debug === true) {
     console.log('[OAuth2Server]', 'MODEL getAuthCode (authCode: ' + authCode + ')')
   }
-  return AuthCodes.findOne({ authCode })
+  return AuthCodes.findOne({ authorizationCode })
+})
+
+const saveAuthCode = bind(function saveAuthCode (code, client, user) {
+  const { authorizationCode } = code
+  const { expiresAt } = code
+  const { redirectUri } = code
+  const clientId = AuthCodes.upsert({ authorizationCode }, {
+    authorizationCode,
+    expiresAt,
+    redirectUri,
+    client,
+    userId: user.id
+  })
+  console.log(clientId)
+  return clientId
 })
 
 /**
  saveAuthorizationCode(code, client, user) and should return:
  An Object representing the authorization code and associated data.
  */
-OAuthMeteorModel.prototype.saveAuthorizationCode = bind(function (code, client, user) {
+OAuthMeteorModel.prototype.saveAuthorizationCode = async function (code, client, user) {
   if (debug === true) {
     console.log(`[OAuth2Server] MODEL saveAuthCode (code:`, code, `clientId: `, client, `user: `, user, `)`)
   }
-  try {
-    const { authorizationCode } = code
-    const codeId = AuthCodes.upsert({ authorizationCode }, {
-      authorizationCode,
-      client,
-      userId: user.id
-    })
-    const codeDoc = Object.assign({}, code, { client: { id: client._id }, user })
-    console.log(codeDoc)
-    return codeDoc
-  } catch (e) {
-    throw e
-  }
-})
+  await saveAuthCode(code, client, user)
+  return Object.assign({}, code, { client: { id: client._id }, user })
+}
 
 OAuthMeteorModel.prototype.saveRefreshToken = bind(function (token, clientId, expires, user) {
   if (debug === true) {
@@ -193,9 +197,3 @@ OAuthMeteorModel.prototype.grantTypeAllowed = function (clientId, grantType) {
 }
 
 export const Model = OAuthMeteorModel
-
-export const modelHelpers = {
-  getClientDoc ({ active, clientId }) {
-    return Clients.findOne({ active, clientId })
-  }
-}
