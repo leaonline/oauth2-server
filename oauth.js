@@ -1,7 +1,7 @@
 /* global Accounts, Npm */
 import { Meteor } from 'meteor/meteor'
 import { Model } from './model'
-import { validate, requiredAuthorizeGetParams } from './validation'
+import { validate, requiredAuthorizeGetParams, requiredAuthorizePostParams } from './validation'
 import { app } from './webapp'
 import { errorHandler } from './error'
 
@@ -165,11 +165,26 @@ export const OAuth2Server = class OAuth2Server {
     })
 
     // STEP 2: ADD USER TO THE REQUEST
-    // error out if user not found, e.g. a cold false token attemp
-    // via the form
+    // validate all inputs again, since all inputs
+    // could have been manipulated within form
     route('post', authorizeUrl, function (req, res, next) {
+      if (!validate(req.body, requiredAuthorizePostParams)) {
+        return errorHandler(res, {
+          error: 'invalid_request',
+          description: 'One or more request parameters are invalid',
+          state: req.query.state,
+          debug: self.debug
+        })
+      }
+
       if (!req.body.token) {
-        return res.sendStatus(401).send('No token')
+        return errorHandler(res, {
+          error: 'noToken',
+          description: 'no token is provided',
+          status: 401,
+          state: req.query.state,
+          debug: self.debug
+        })
       }
 
       const user = Meteor.users.findOne({
@@ -177,16 +192,23 @@ export const OAuth2Server = class OAuth2Server {
       })
 
       if (!user) {
-        return res.sendStatus(401).send('Invalid token')
+        return errorHandler(res, {
+          error: 'invalidToken',
+          description: 'The provided token is invalid',
+          status: 401,
+          state: req.query.state,
+          debug: self.debug
+        })
       }
 
-      req.user = { id: user._id }
+      req.user = { id: user._id } // TODO add fields from scope
       return next()
     })
 
     route('post', authorizeUrl, function (req, next) {
       if (req.body.allow === 'yes') {
-        Meteor.users.update(req.user.id, { $addToSet: { 'oauth.authorizedClients': this.clientId } })
+        const clientId = req.query.client_id
+        Meteor.users.update(req.user.id, { $addToSet: { 'oauth.authorizedClients': clientId } })
       }
 
       return next(null, req.body.allow === 'yes', req.user)
