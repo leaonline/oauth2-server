@@ -1,5 +1,49 @@
 # History
 
+## 3.0.0 - 2019/10/01
+
+**Summary**
+
+- migrated to latest node oauth2 server (v3)
+- wrap model in async Meteor environment
+- use builtin `WebApp` instead of `express`
+- built complete `authorization_code` workflow to make this usable with a custom `Accounts` package
+- all routes fallback with an error handler to return the respective OAuth error 
+
+**Commits**
+
+- lint fix to comply standardjs
+- oauth server implemented token handler and authenticated (token-required) routes
+- model implemented token adapters
+- model simplified logging
+- model fixed getClient async access and logging behavior
+- oauth fixed references to this via self property
+- redirect after authorizazion success
+- implement authorization stack
+- fix saveAuthorizationCode
+- model simplified functions and removed unneccesary Promises
+- model saveAuthorizationCode conform with node2 server 3.x API
+- model updated debug logging format
+- reusable validation for client_id and redirect_url
+- extended validation in POST authUrl
+- extended error handler
+- cleanup imports
+- use facaded app that can be replaced if desired
+- add input validation utils
+- use get and post route for WebApp connect
+- model im proved console.log
+- improved error handling on auth route
+- model improve debug messages
+- introduced oauth app registration
+- fixed lint errors
+- model rewritten using promises
+- update README
+- removed express dependency and v3 compatibility
+- extended model config and v3 compatibility
+- decaffeinated project
+- added .npm to gitignore
+
+
 ## 2.1.0 - 2019/07/11
 
 - Support multiple `redirect_uri` #10
