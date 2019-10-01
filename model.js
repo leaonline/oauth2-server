@@ -54,7 +54,7 @@ const getClient = bind(function (clientId) {
  */
 
 const saveToken = bind(function (tokenDoc, clientDoc, userDoc) {
-  const tokenDocId =  AccessTokens.insert({
+  const tokenDocId = AccessTokens.insert({
     accessToken: tokenDoc.accessToken,
     accessTokenExpiresAt: tokenDoc.accessTokenExpiresAt,
     refreshToken: tokenDoc.refreshToken,
@@ -65,7 +65,7 @@ const saveToken = bind(function (tokenDoc, clientDoc, userDoc) {
     },
     user: {
       id: userDoc.id
-    },
+    }
   })
   return AccessTokens.findOne(tokenDocId)
 })
@@ -133,11 +133,9 @@ const getRefreshToken = bind(function (refreshToken) {
 
 /*
     Model specification
-
     generateAccessToken(client, user, scope) is optional and should return a String.
     generateAuthorizationCode() is optional and should return a String.
     generateRefreshToken(client, user, scope) is optional and should return a String.
-
     getUser(username, password) should return an object:
         No longer requires that id be returned.
     getUserFromClient(client) should return an object:
@@ -146,10 +144,7 @@ const getRefreshToken = bind(function (refreshToken) {
         Return falsy in your getClient()
         Throw an error in your getClient()
     revokeToken(token) is required and should return true
-
-
     validateScope(user, client, scope) should return a Boolean.
-
  */
 
 function OAuthMeteorModel (config = {}) {
@@ -187,7 +182,7 @@ OAuthMeteorModel.prototype.log = function (...args) {
 OAuthMeteorModel.prototype.getAccessToken = async function (bearerToken) {
   this.log('[OAuth2Server]', 'MODEL getAccessToken (bearerToken:', bearerToken, ')')
 
-  return await getAccessToken(bearerToken)
+  return getAccessToken(bearerToken)
 }
 
 /**
@@ -204,7 +199,7 @@ OAuthMeteorModel.prototype.getAccessToken = async function (bearerToken) {
 OAuthMeteorModel.prototype.createClient = async function ({ title, homepage, description, privacyLink, redirectUris, grants }) {
   this.log(`[OAuth2Server] MODEL createClient (${redirectUris})`)
 
-  return await createClient({ title, homepage, description, privacyLink, redirectUris, grants })
+  return createClient({ title, homepage, description, privacyLink, redirectUris, grants })
 }
 
 /**
@@ -215,7 +210,7 @@ OAuthMeteorModel.prototype.createClient = async function ({ title, homepage, des
 OAuthMeteorModel.prototype.getClient = async function (clientId) {
   this.log(`[OAuth2Server] MODEL getClient (clientId: ${clientId})`)
 
-  return await getClient(clientId)
+  return getClient(clientId)
 }
 
 /**
@@ -230,10 +225,10 @@ OAuthMeteorModel.prototype.getClient = async function (clientId) {
 OAuthMeteorModel.prototype.saveToken = async function (tokenDoc, clientDoc, userDoc) {
   this.log(`[OAuth2Server] MODEL saveAccessToken:`)
   this.log(`with token `, tokenDoc)
-  this.log(`with client `,clientDoc)
+  this.log(`with client `, clientDoc)
   this.log(`with user `, userDoc)
 
-  return await saveToken(tokenDoc, clientDoc, userDoc)
+  return saveToken(tokenDoc, clientDoc, userDoc)
 }
 
 /**
@@ -246,7 +241,7 @@ OAuthMeteorModel.prototype.saveToken = async function (tokenDoc, clientDoc, user
 OAuthMeteorModel.prototype.getAuthorizationCode = async function (authorizationCode) {
   this.log('[OAuth2Server]', 'MODEL getAuthCode (authCode: ' + authorizationCode + ')')
 
-  return await getAuthorizationCode(authorizationCode)
+  return getAuthorizationCode(authorizationCode)
 }
 
 /**
@@ -280,7 +275,7 @@ OAuthMeteorModel.prototype.revokeAuthorizationCode = async function (code) {
 OAuthMeteorModel.prototype.saveRefreshToken = async function (token, clientId, expires, user) {
   this.log('[OAuth2Server]', 'MODEL saveRefreshToken (token:', token, ', clientId:', clientId, ', user:', user, ', expires:', expires, ')')
 
-  return await saveRefreshToken(token, clientId, expires, user)
+  return saveRefreshToken(token, clientId, expires, user)
 }
 
 /**
@@ -294,7 +289,7 @@ OAuthMeteorModel.prototype.saveRefreshToken = async function (token, clientId, e
 OAuthMeteorModel.prototype.getRefreshToken = async function (refreshToken) {
   this.log('[OAuth2Server]', 'MODEL getRefreshToken (refreshToken: ' + refreshToken + ')')
 
-  return await getRefreshToken(refreshToken)
+  return getRefreshToken(refreshToken)
 }
 
 /**

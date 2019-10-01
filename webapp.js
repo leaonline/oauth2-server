@@ -1,3 +1,4 @@
+/* global Npm */
 import { WebApp } from 'meteor/webapp'
 
 const bodyParser = Npm.require('body-parser')

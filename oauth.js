@@ -30,7 +30,7 @@ const publishAuhorizedClients = (pubName) => {
   })
 }
 
-const secureHandler = (self, handler) =>  bind(function (req, res, next) {
+const secureHandler = (self, handler) => bind(function (req, res, next) {
   const that = this
   try {
     handler.call(that, req, res, next)
