@@ -1,6 +1,136 @@
 import { Meteor } from 'meteor/meteor'
 import { Random } from 'meteor/random'
 
+let AccessTokens = void 0
+let RefreshTokens = void 0
+let Clients = void 0
+let AuthCodes = void 0
+let debug = void 0
+
+const bind = fn => Meteor.bindEnvironment(fn)
+
+/**
+ * @private used by OAuthMeteorModel.prototype.getAccessToken
+ */
+
+const getAccessToken = bind(function (bearerToken) {
+  return AccessTokens.findOne({ accessToken: bearerToken })
+})
+
+/**
+ * @private used by  OAuthMeteorModel.prototype.createClient
+ */
+
+const createClient = bind(function ({ title, homepage, description, privacyLink, redirectUris, grants }) {
+  const existingClient = Clients.findOne({ title, homepage })
+  if (existingClient) {
+    return Clients.update(existingClient._id, { $set: { description, privacyLink, redirectUris, grants } })
+  }
+  const clientId = Random.id(16)
+  const secret = Random.id(32)
+  const clientDocId = Clients.insert({
+    title,
+    homepage,
+    description,
+    privacyLink,
+    redirectUris,
+    clientId,
+    secret,
+    grants
+  })
+  return Clients.findOne(clientDocId)
+})
+
+/**
+ * @private used by OAuthMeteorModel.prototype.getClient
+ */
+
+const getClient = bind(function (clientId) {
+  return Clients.findOne({ clientId })
+})
+
+/**
+ * @private used by OAuthMeteorModel.prototype.saveToken
+ */
+
+const saveToken = bind(function (tokenDoc, clientDoc, userDoc) {
+  const tokenDocId =  AccessTokens.insert({
+    accessToken: tokenDoc.accessToken,
+    accessTokenExpiresAt: tokenDoc.accessTokenExpiresAt,
+    refreshToken: tokenDoc.refreshToken,
+    refreshTokenExpiresAt: tokenDoc.refreshTokenExpiresAt,
+    scope: tokenDoc.scope,
+    client: {
+      id: clientDoc.clientId
+    },
+    user: {
+      id: userDoc.id
+    },
+  })
+  return AccessTokens.findOne(tokenDocId)
+})
+
+/**
+ * @private used by OAuthMeteorModel.prototype.getAuthorizationCode
+ */
+
+const getAuthorizationCode = bind(function (authorizationCode) {
+  return AuthCodes.findOne({ authorizationCode })
+})
+
+/**
+ * @private used by OAuthMeteorModel.prototype.saveAuthorizationCode
+ */
+
+const saveAuthorizationCode = bind(function saveAuthCode (code, client, user) {
+  const { authorizationCode } = code
+  const { expiresAt } = code
+  const { redirectUri } = code
+  return AuthCodes.upsert({ authorizationCode }, {
+    authorizationCode,
+    expiresAt,
+    redirectUri,
+    client: {
+      id: client.client_id
+    },
+    user: {
+      id: user.id
+    }
+  })
+})
+
+/**
+ * @private used by OAuthMeteorModel.prototype.revokeAuthorizationCode
+ */
+
+const revokeAuthorizationCode = bind(function revokeAuthorizationCode ({ authorizationCode }) {
+  const docCount = AuthCodes.find({ authorizationCode }).count()
+  if (docCount === 0) {
+    return true
+  }
+  return AuthCodes.remove({ authorizationCode }) === docCount
+})
+
+/**
+ * @private used by OAuthMeteorModel.prototype.saveRefreshToken
+ */
+
+const saveRefreshToken = bind(function (token, clientId, expires, user) {
+  return RefreshTokens.insert({
+    refreshToken: token,
+    clientId,
+    userId: user.id,
+    expires
+  })
+})
+
+/**
+ * @private used by OAuthMeteorModel.prototype.getRefreshToken
+ */
+const getRefreshToken = bind(function (refreshToken) {
+  return RefreshTokens.findOne({ refreshToken })
+})
+
 /*
     Model specification
 
@@ -15,21 +145,12 @@ import { Random } from 'meteor/random'
     grantTypeAllowed() was removed. You can instead:
         Return falsy in your getClient()
         Throw an error in your getClient()
-    revokeAuthorizationCode(code) is required and should return true
     revokeToken(token) is required and should return true
 
 
     validateScope(user, client, scope) should return a Boolean.
 
  */
-
-let AccessTokens = void 0
-let RefreshTokens = void 0
-let Clients = void 0
-let AuthCodes = void 0
-let debug = void 0
-
-const bind = fn => Meteor.bindEnvironment(fn)
 
 function OAuthMeteorModel (config = {}) {
   config.accessTokensCollectionName = config.accessTokensCollectionName || 'oauth_access_tokens'
@@ -63,45 +184,28 @@ OAuthMeteorModel.prototype.log = function (...args) {
  scope (optional String)
  user (Object)
  */
-OAuthMeteorModel.prototype.getAccessToken = bind(function (bearerToken) {
+OAuthMeteorModel.prototype.getAccessToken = async function (bearerToken) {
   this.log('[OAuth2Server]', 'MODEL getAccessToken (bearerToken:', bearerToken, ')')
 
-  return new Promise((resolve, reject) => {
+  return await getAccessToken(bearerToken)
+}
 
-    try {
-      const token = AccessTokens.findOne({ accessToken: bearerToken })
-      return resolve(token)
-    } catch (e) {
-      return reject(e)
-    }
-  })
-})
+/**
+ * Registers a new client app in the {Clients} collection
+ * @param title
+ * @param homepage
+ * @param description
+ * @param privacyLink
+ * @param redirectUris
+ * @param grants
+ * @return {Promise<Object>}
+ */
 
-OAuthMeteorModel.prototype.createClient = bind(function ({ title, homepage, description, privacyLink, redirectUris, grants }) {
+OAuthMeteorModel.prototype.createClient = async function ({ title, homepage, description, privacyLink, redirectUris, grants }) {
   this.log(`[OAuth2Server] MODEL createClient (${redirectUris})`)
 
-  const existingClient = Clients.findOne({ title, homepage })
-  if (existingClient) {
-    return Clients.update(existingClient._id, { $set: { description, privacyLink, redirectUris, grants } })
-  }
-  const clientId = Random.id(16)
-  const secret = Random.id(32)
-  const clientDocId = Clients.insert({
-    title,
-    homepage,
-    description,
-    privacyLink,
-    redirectUris,
-    clientId,
-    secret,
-    grants
-  })
-  return Clients.findOne(clientDocId)
-})
-
-const getClient = bind(function (clientId) {
-  return Clients.findOne({ clientId })
-})
+  return await createClient({ title, homepage, description, privacyLink, redirectUris, grants })
+}
 
 /**
  getClient(clientId, clientSecret) should return an object with, at minimum:
@@ -123,44 +227,27 @@ OAuthMeteorModel.prototype.getClient = async function (clientId) {
  refreshTokenExpiresAt (optional Date)
  user (Object)
  */
-OAuthMeteorModel.prototype.saveToken = bind(function (token, clientId, expires, user) {
-  this.log('[OAuth2Server]', 'MODEL saveAccessToken (token:', token, ', clientId:', clientId, ', user:', user, ', expires:', expires, ')')
+OAuthMeteorModel.prototype.saveToken = async function (tokenDoc, clientDoc, userDoc) {
+  this.log(`[OAuth2Server] MODEL saveAccessToken:`)
+  this.log(`with token `, tokenDoc)
+  this.log(`with client `,clientDoc)
+  this.log(`with user `, userDoc)
 
-  return AccessTokens.insert({
-    accessToken: token,
-    clientId,
-    userId: user.id,
-    expires
-  })
-})
+  return await saveToken(tokenDoc, clientDoc, userDoc)
+}
 
 /**
  getAuthCode() was renamed to getAuthorizationCode(code) and should return:
  client (Object), containing at least an id property that matches the supplied client
  expiresAt (Date)
  redirectUri (optional String)
- user (Object)
+ @returns An Object representing the authorization code and associated data.
  */
-OAuthMeteorModel.prototype.getAuthorizationCode = bind(function (authorizationCode) {
-  this.log('[OAuth2Server]', 'MODEL getAuthCode (authCode: ' + authCode + ')')
+OAuthMeteorModel.prototype.getAuthorizationCode = async function (authorizationCode) {
+  this.log('[OAuth2Server]', 'MODEL getAuthCode (authCode: ' + authorizationCode + ')')
 
-  return AuthCodes.findOne({ authorizationCode })
-})
-
-const saveAuthCode = bind(function saveAuthCode (code, client, user) {
-  const { authorizationCode } = code
-  const { expiresAt } = code
-  const { redirectUri } = code
-  const clientId = AuthCodes.upsert({ authorizationCode }, {
-    authorizationCode,
-    expiresAt,
-    redirectUri,
-    client,
-    userId: user.id
-  })
-  console.log(clientId)
-  return clientId
-})
+  return await getAuthorizationCode(authorizationCode)
+}
 
 /**
  saveAuthorizationCode(code, client, user) and should return:
@@ -169,20 +256,32 @@ const saveAuthCode = bind(function saveAuthCode (code, client, user) {
 OAuthMeteorModel.prototype.saveAuthorizationCode = async function (code, client, user) {
   this.log(`[OAuth2Server] MODEL saveAuthCode (code:`, code, `clientId: `, client, `user: `, user, `)`)
 
-  await saveAuthCode(code, client, user)
+  await saveAuthorizationCode(code, client, user)
   return Object.assign({}, code, { client: { id: client._id }, user })
 }
 
-OAuthMeteorModel.prototype.saveRefreshToken = bind(function (token, clientId, expires, user) {
+/**
+ * revokeAuthorizationCode(code) is required and should return true
+ */
+OAuthMeteorModel.prototype.revokeAuthorizationCode = async function (code) {
+  this.log(`[OAuth2Server] MODEL revokeAuthorizationCode (code: ${code})`)
+
+  return revokeAuthorizationCode(code)
+}
+
+/**
+ *
+ * @param token
+ * @param clientId
+ * @param expires
+ * @param user
+ * @return {Promise<*>}
+ */
+OAuthMeteorModel.prototype.saveRefreshToken = async function (token, clientId, expires, user) {
   this.log('[OAuth2Server]', 'MODEL saveRefreshToken (token:', token, ', clientId:', clientId, ', user:', user, ', expires:', expires, ')')
 
-  return RefreshTokens.insert({
-    refreshToken: token,
-    clientId,
-    userId: user.id,
-    expires
-  })
-})
+  return await saveRefreshToken(token, clientId, expires, user)
+}
 
 /**
  getRefreshToken(token) should return an object with:
@@ -192,13 +291,19 @@ OAuthMeteorModel.prototype.saveRefreshToken = bind(function (token, clientId, ex
  scope (optional String)
  user (Object)
  */
-OAuthMeteorModel.prototype.getRefreshToken = bind(function (refreshToken) {
+OAuthMeteorModel.prototype.getRefreshToken = async function (refreshToken) {
   this.log('[OAuth2Server]', 'MODEL getRefreshToken (refreshToken: ' + refreshToken + ')')
 
-  return RefreshTokens.findOne({ refreshToken })
-})
+  return await getRefreshToken(refreshToken)
+}
 
-OAuthMeteorModel.prototype.grantTypeAllowed = function (clientId, grantType) {
+/**
+ *
+ * @param clientId
+ * @param grantType
+ * @return {boolean}
+ */
+OAuthMeteorModel.prototype.grantTypeAllowed = async function (clientId, grantType) {
   this.log('[OAuth2Server]', 'MODEL grantTypeAllowed (clientId:', clientId, ', grantType:', grantType + ')')
 
   return [ 'authorization_code', 'refresh_token' ].includes(grantType)
