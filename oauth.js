@@ -30,6 +30,23 @@ const publishAuhorizedClients = (pubName) => {
   })
 }
 
+const secureHandler = (self, handler) =>  bind(function (req, res, next) {
+  const that = this
+  try {
+    handler.call(that, req, res, next)
+  } catch (unknownException) {
+    const state = req && req.query && req.query.state
+    errorHandler(res, {
+      error: 'server_error',
+      status: 500,
+      description: 'An internal server error occurred',
+      state,
+      debug: self.debug,
+      originalError: unknownException
+    })
+  }
+})
+
 export const OAuth2Server = class OAuth2Server {
   constructor ({ serverOptions, model, routes, debug }) {
     this.config = { serverOptions, model, routes }
@@ -81,28 +98,37 @@ export const OAuth2Server = class OAuth2Server {
   authenticateHandler (options) {
     const self = this
     return function (req, res, next) {
+      console.log('auth handler')
       let request = new Request(req)
       let response = new Response(res)
       return self.oauth.authenticate(request, response, options)
         .then(function (token) {
-          res.locals.oauth = { token: token }
+          req.data = Object.assign({}, req.data, token)
           next()
         })
         .catch(function (err) {
-          // handle error condition
-          console.error(err)
+          return errorHandler(res, {
+            status: err.status,
+            error: err.name,
+            description: err.message,
+            debug: self.debug
+          })
         })
     }
   }
 
   authenticatedRoute () {
     const self = this
+    const debugMiddleware = getDebugMiddleWare(self)
+    const authHandler = self.authenticateHandler()
     return {
       get (route, fn) {
-        return app.get(route, getDebugMiddleWare(self), self.authenticateHandler(), fn)
+        app.get(route, debugMiddleware)
+        app.get(route, authHandler)
+        app.get(route, secureHandler(self, fn))
       },
       post (route, fn) {
-        return app.post(route, getDebugMiddleWare(self), self.authenticateHandler(), fn)
+        return app.post(route, debugMiddleware, authHandler, fn)
       }
     }
   }
@@ -170,12 +196,21 @@ export const OAuth2Server = class OAuth2Server {
     route('use', accessTokenUrl, function (req, res, next) {
       let request = new Request(req)
       let response = new Response(res)
+      console.log('access token::::', req.body)
       return self.oauth.token(request, response)
         .then(function (token) {
-          console.log('token generated')
-          console.log(token)
-          res.locals.oauth = { token: token }
-          next()
+          res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store',
+            'Pragma': 'no-cache'
+          })
+          const body = JSON.stringify({
+            'access_token': token.accessToken,
+            'token_type': 'bearer',
+            'expires_in': token.accessTokenExpiresAt,
+            'refresh_token': token.refreshToken
+          })
+          res.end(body)
         })
         .catch(function (err) {
           // handle error condition
