@@ -56,14 +56,16 @@ export const OAuth2Server = class OAuth2Server {
    * @returns {}
    */
   registerClient ({ title, homepage, description, privacyLink, redirectUris, grants }) {
-    return this.model.createClient({ title, homepage, description, privacyLink, redirectUris, grants })
+    const self = this
+    return self.model.createClient({ title, homepage, description, privacyLink, redirectUris, grants })
   }
 
   authorizeHandler (options) {
+    const self = this
     return function (req, res, next) {
       let request = new Request(req)
       let response = new Response(res)
-      return this.oauth.authorize(request, response, options)
+      return self.oauth.authorize(request, response, options)
         .then(function (code) {
           res.locals.oauth = { code: code }
           next()
@@ -77,10 +79,11 @@ export const OAuth2Server = class OAuth2Server {
   }
 
   authenticateHandler (options) {
+    const self = this
     return function (req, res, next) {
       let request = new Request(req)
       let response = new Response(res)
-      return this.oauth.authenticate(request, response, options)
+      return self.oauth.authenticate(request, response, options)
         .then(function (token) {
           res.locals.oauth = { token: token }
           next()
@@ -138,15 +141,15 @@ export const OAuth2Server = class OAuth2Server {
     }
 
     const route = (method, url, handler) => {
-      const targetFn = this.app[ method ]
+      const targetFn = self.app[ method ]
       if (self.debug) {
-        targetFn.call(this.app, url, debugMiddleware)
+        targetFn.call(self.app, url, debugMiddleware)
       }
 
       // we automatically bound any route
       // to ensure a functional fiber running
       // and to support Meteor and Mongo features
-      targetFn.call(this.app, url, bind(function (req, res, next) {
+      targetFn.call(self.app, url, bind(function (req, res, next) {
         const that = this
         try {
           handler.call(that, req, res, next)
@@ -167,7 +170,7 @@ export const OAuth2Server = class OAuth2Server {
     route('use', accessTokenUrl, function (req, res, next) {
       let request = new Request(req)
       let response = new Response(res)
-      return this.oauth.token(request, response)
+      return self.oauth.token(request, response)
         .then(function (token) {
           console.log('token generated')
           console.log(token)
@@ -176,7 +179,12 @@ export const OAuth2Server = class OAuth2Server {
         })
         .catch(function (err) {
           // handle error condition
-          console.error(err)
+          return errorHandler(res, {
+            error: 'unauthorized_client',
+            description: err.message,
+            state: req.query.state,
+            debug: self.debug
+          })
         })
     })
 
