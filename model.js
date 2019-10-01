@@ -53,10 +53,10 @@ function OAuthMeteorModel (config = {}) {
  user (Object)
  */
 OAuthMeteorModel.prototype.getAccessToken = bind(function (bearerToken) {
+  if (debug === true) {
+    console.log('[OAuth2Server]', 'MODEL getAccessToken (bearerToken:', bearerToken, ')')
+  }
   return new Promise((resolve, reject) => {
-    if (debug === true) {
-      console.log('[OAuth2Server]', 'MODEL getAccessToken (bearerToken:', bearerToken, ')')
-    }
 
     try {
       const token = AccessTokens.findOne({ accessToken: bearerToken })
@@ -68,6 +68,9 @@ OAuthMeteorModel.prototype.getAccessToken = bind(function (bearerToken) {
 })
 
 OAuthMeteorModel.prototype.createClient = bind(function ({ title, homepage, description, privacyLink, redirectUris, grants }) {
+  if (debug === true) {
+    console.log(`[OAuth2Server] MODEL createClient (${redirectUris})`)
+  }
   const existingClient = Clients.findOne({ title, homepage })
   if (existingClient) {
     return Clients.update(existingClient._id, { $set: { description, privacyLink, redirectUris, grants } })
@@ -87,17 +90,21 @@ OAuthMeteorModel.prototype.createClient = bind(function ({ title, homepage, desc
   return Clients.findOne(clientDocId)
 })
 
+const getClient = bind(function (clientId) {
+  return Clients.findOne({ clientId })
+})
+
 /**
  getClient(clientId, clientSecret) should return an object with, at minimum:
  redirectUris (Array)
  grants (Array)
  */
-OAuthMeteorModel.prototype.getClient = bind(function (clientId) {
+OAuthMeteorModel.prototype.getClient = async function (clientId) {
   if (debug === true) {
     console.log(`[OAuth2Server] MODEL getClient (clientId: ${clientId})`)
   }
-  return Clients.findOne({ clientId })
-})
+  return await getClient(clientId)
+}
 
 /**
  saveToken(token, client, user) and should return:
