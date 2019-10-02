@@ -16,3 +16,19 @@ Npm.depends({
   'oauth2-server': '3.0.0',
   'body-parser': '1.19.0'
 })
+
+Package.onTest(function (api) {
+  api.use('ecmascript')
+//  api.use('leaonline:oauth2-server')
+  api.use('meteortesting:mocha')
+  api.use('practicalmeteor:chai')
+//  api.mainModule('oauth-tests.js', 'server')
+
+  api.addFiles([
+    'error-tests.js',
+    'validation-tests.js',
+    'webapp-tests.js',
+    'model-tests.js',
+    'oauth-tests.js',
+  ], 'server')
+})

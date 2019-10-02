@@ -174,6 +174,15 @@ Template.authorize.onRendered(function() {
 }
 ```
 
+## Testing
+
+We use mocha with `meteortesting:mocha` to run the tests. You can run the tests in watch mode via
+
+```bash
+TEST_WATCH=1 TEST_CLIENT=0 meteor test-packages ./ --driver-package meteortesting:mocha
+```
+
+
 ## License
 
 MIT, see [license file](./LICENSE)
