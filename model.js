@@ -141,6 +141,17 @@ export const DefaultModelConfig = {
   debug: false
 }
 
+const createCollection = (passedCollection, collectionName) => {
+  const existingCollection = Mongo.Collection.get(collectionName)
+  if (existingCollection) {
+    return existingCollection
+  }
+  if (passedCollection) {
+    return passedCollection
+  }
+  return new Mongo.Collection(collectionName)
+}
+
 /*
     Model specification
     generateAccessToken(client, user, scope) is optional and should return a String.
@@ -160,10 +171,10 @@ export const DefaultModelConfig = {
 function OAuthMeteorModel (config = {}) {
   const _config = Object.assign({}, DefaultModelConfig, config)
   this.debug = _config.debug
-  AccessTokens = (_config.accessTokensCollection || new Mongo.Collection(_config.accessTokensCollectionName))
-  RefreshTokens = (_config.refreshTokensCollection || new Mongo.Collection(_config.refreshTokensCollectionName))
-  Clients = (_config.clientsCollection || new Mongo.Collection(_config.clientsCollectionName))
-  AuthCodes = (_config.authCodesCollection || new Mongo.Collection(_config.authCodesCollectionName))
+  AccessTokens = createCollection(_config.accessTokensCollection, _config.accessTokensCollectionName)
+  RefreshTokens = createCollection(_config.refreshTokensCollection, _config.refreshTokensCollectionName)
+  AuthCodes = createCollection(_config.authCodesCollection, _config.authCodesCollectionName)
+  Clients = createCollection(_config.clientsCollection, _config.clientsCollectionName)
 }
 
 /**

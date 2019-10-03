@@ -9,6 +9,7 @@ Package.describe({
 Package.onUse(function (api) {
   api.versionsFrom('1.0')
   api.use('ecmascript@0.12.7')
+  api.use('dburles:mongo-collection-instances@0.3.5')
   api.mainModule('oauth.js', 'server')
 })
 
