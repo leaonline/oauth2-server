@@ -1,4 +1,5 @@
 import { Meteor } from 'meteor/meteor'
+import { Mongo } from 'meteor/mongo'
 import { Random } from 'meteor/random'
 
 let AccessTokens = void 0
@@ -131,6 +132,14 @@ const getRefreshToken = bind(function (refreshToken) {
   return RefreshTokens.findOne({ refreshToken })
 })
 
+
+export const DefaultModelConfig = {
+  accessTokensCollectionName: 'oauth_access_tokens',
+  refreshTokensCollectionName: 'oauth_refresh_tokens',
+  clientsCollectionName: 'oauth_clients',
+  authCodesCollectionName: 'oauth_auth_codes'
+}
+
 /*
     Model specification
     generateAccessToken(client, user, scope) is optional and should return a String.
@@ -154,10 +163,10 @@ function OAuthMeteorModel (config = {}) {
   config.authCodesCollectionName = config.authCodesCollectionName || 'oauth_auth_codes'
 
   debug = (debug = config.debug)
-  AccessTokens = (config.accessTokensCollection || new Meteor.Collection(config.accessTokensCollectionName))
-  RefreshTokens = (config.refreshTokensCollection || new Meteor.Collection(config.refreshTokensCollectionName))
-  Clients = (config.clientsCollection || new Meteor.Collection(config.clientsCollectionName))
-  AuthCodes = (config.authCodesCollection || new Meteor.Collection(config.authCodesCollectionName))
+  AccessTokens = (config.accessTokensCollection || new Mongo.Collection(config.accessTokensCollectionName))
+  RefreshTokens = (config.refreshTokensCollection || new Mongo.Collection(config.refreshTokensCollectionName))
+  Clients = (config.clientsCollection || new Mongo.Collection(config.clientsCollectionName))
+  AuthCodes = (config.authCodesCollection || new Mongo.Collection(config.authCodesCollectionName))
 }
 
 /**

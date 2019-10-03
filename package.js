@@ -19,6 +19,8 @@ Npm.depends({
 
 Package.onTest(function (api) {
   api.use('ecmascript')
+  api.use('mongo')
+  api.use('dburles:mongo-collection-instances')
 //  api.use('leaonline:oauth2-server')
   api.use('meteortesting:mocha')
   api.use('practicalmeteor:chai')
