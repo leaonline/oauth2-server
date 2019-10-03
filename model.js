@@ -137,7 +137,8 @@ export const DefaultModelConfig = {
   accessTokensCollectionName: 'oauth_access_tokens',
   refreshTokensCollectionName: 'oauth_refresh_tokens',
   clientsCollectionName: 'oauth_clients',
-  authCodesCollectionName: 'oauth_auth_codes'
+  authCodesCollectionName: 'oauth_auth_codes',
+  debug: false
 }
 
 /*
@@ -157,16 +158,12 @@ export const DefaultModelConfig = {
  */
 
 function OAuthMeteorModel (config = {}) {
-  config.accessTokensCollectionName = config.accessTokensCollectionName || 'oauth_access_tokens'
-  config.refreshTokensCollectionName = config.refreshTokensCollectionName || 'oauth_refresh_tokens'
-  config.clientsCollectionName = config.clientsCollectionName || 'oauth_clients'
-  config.authCodesCollectionName = config.authCodesCollectionName || 'oauth_auth_codes'
-
-  debug = (debug = config.debug)
-  AccessTokens = (config.accessTokensCollection || new Mongo.Collection(config.accessTokensCollectionName))
-  RefreshTokens = (config.refreshTokensCollection || new Mongo.Collection(config.refreshTokensCollectionName))
-  Clients = (config.clientsCollection || new Mongo.Collection(config.clientsCollectionName))
-  AuthCodes = (config.authCodesCollection || new Mongo.Collection(config.authCodesCollectionName))
+  const _config = Object.assign({}, DefaultModelConfig, config)
+  this.debug = _config.debug
+  AccessTokens = (_config.accessTokensCollection || new Mongo.Collection(_config.accessTokensCollectionName))
+  RefreshTokens = (_config.refreshTokensCollection || new Mongo.Collection(_config.refreshTokensCollectionName))
+  Clients = (_config.clientsCollection || new Mongo.Collection(_config.clientsCollectionName))
+  AuthCodes = (_config.authCodesCollection || new Mongo.Collection(_config.authCodesCollectionName))
 }
 
 /**
