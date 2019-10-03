@@ -46,8 +46,9 @@ const createClient = bind(function ({ title, homepage, description, privacyLink,
  * @private used by OAuthMeteorModel.prototype.getClient
  */
 
-const getClient = bind(function (clientId) {
-  return Clients.findOne({ clientId })
+const getClient = bind(function (clientId, secret) {
+  const clientDoc = Clients.findOne({ clientId, secret })
+  return clientDoc || false
 })
 
 /**
@@ -224,10 +225,10 @@ OAuthMeteorModel.prototype.createClient = async function ({ title, homepage, des
  redirectUris (Array)
  grants (Array)
  */
-OAuthMeteorModel.prototype.getClient = async function (clientId) {
+OAuthMeteorModel.prototype.getClient = async function (clientId, secret) {
   this.log(`[OAuth2Server] MODEL getClient (clientId: ${clientId})`)
 
-  return getClient(clientId)
+  return getClient(clientId, secret)
 }
 
 /**

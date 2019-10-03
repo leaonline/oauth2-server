@@ -100,16 +100,40 @@ describe('model', function () {
 
   describe('getClient', function () {
 
+    let model
+    let clientDoc
+
+    beforeEach(function () {
+      model = new Model()
+      const title = Random.id()
+      const redirectUris = [ Meteor.absoluteUrl(`/${Random.id()}`) ]
+      const grants = [ GrantTypes.authorization_code ]
+      const clientDocId = Promise.await(model.createClient({ title, redirectUris, grants }))
+      clientDoc = Mongo.Collection.get(DefaultModelConfig.clientsCollectionName).findOne(clientDocId)
+    })
+
     it('returns a client by clientId', function () {
-      assert.fail()
+      const {clientId} = clientDoc
+      const actualClientDoc = Promise.await(model.getClient(clientId))
+      assert.deepEqual(actualClientDoc, clientDoc)
     })
 
     it('returns false if no client is found', function () {
-      assert.fail()
+      const falsey = Promise.await(model.getClient(Random.id()))
+      assert.isFalse(falsey)
     })
 
     it('returns a client by clientId and clientSecret', function () {
-      assert.fail()
+      const {clientId} = clientDoc
+      const {secret} = clientDoc
+      const actualClientDoc = Promise.await(model.getClient(clientId, secret))
+      assert.deepEqual(actualClientDoc, clientDoc)
+    })
+
+    it ('returns false if clientSecret is incorrect', function () {
+      const {clientId} = clientDoc
+      const falsey = Promise.await(model.getClient(clientId, Random.id()))
+      assert.isFalse(falsey)
     })
   })
 
