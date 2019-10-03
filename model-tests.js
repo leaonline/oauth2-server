@@ -96,14 +96,6 @@ describe('model', function () {
       assert.deepEqual(clientDoc.redirectUris, redirectUris)
       assert.deepEqual(clientDoc.grants, grants)
     })
-
-    it('throws if required credentials are missing', function () {
-      assert.fail()
-    })
-
-    it('throws if required credentials are of false type', function () {
-      assert.fail()
-    })
   })
 
   describe('getClient', function () {
