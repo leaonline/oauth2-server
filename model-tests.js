@@ -84,11 +84,14 @@ describe('model', function () {
     it('creates a client with minimum required credentials', function () {
       const model = new Model()
       const title = Random.id()
-      const redirectUris = [ Meteor.absoluteUrl('/redirect-auth') ]
+      const redirectUris = [ Meteor.absoluteUrl(`/${Random.id()}`) ]
       const grants = [ GrantTypes.authorization_code ]
-      const clientDoc = model.createClient({ title, redirectUris, grants })
+      const clientDocId = Promise.await(model.createClient({ title, redirectUris, grants }))
+      const clientDoc = Mongo.Collection.get(DefaultModelConfig.clientsCollectionName).findOne(clientDocId)
 
       assert.isDefined(clientDoc)
+      assert.isDefined(clientDoc.clientId)
+      assert.isDefined(clientDoc.secret)
       assert.equal(clientDoc.title, title)
       assert.deepEqual(clientDoc.redirectUris, redirectUris)
       assert.deepEqual(clientDoc.grants, grants)

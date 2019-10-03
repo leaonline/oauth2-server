@@ -23,7 +23,7 @@ const getAccessToken = bind(function (bearerToken) {
  */
 
 const createClient = bind(function ({ title, homepage, description, privacyLink, redirectUris, grants }) {
-  const existingClient = Clients.findOne({ title, homepage })
+  const existingClient = Clients.findOne({ title, redirectUris })
   if (existingClient) {
     return Clients.update(existingClient._id, { $set: { description, privacyLink, redirectUris, grants } })
   }
