@@ -22,7 +22,6 @@ Package.onTest(function (api) {
   api.use('ecmascript')
   api.use('mongo')
   api.use('dburles:mongo-collection-instances')
-  api.use('leaonline:oauth2-model')
   api.use('meteortesting:mocha')
   api.use('practicalmeteor:chai')
   //  api.mainModule('oauth-tests.js', 'server')
@@ -30,6 +29,7 @@ Package.onTest(function (api) {
   api.addFiles([
     'error-tests.js',
     'validation-tests.js',
+    'model-tests.js',
     'webapp-tests.js',
     'oauth-tests.js'
   ], 'server')

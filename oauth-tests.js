@@ -1,18 +1,25 @@
 /* eslint-env mocha */
 import { assert } from 'meteor/practicalmeteor:chai'
-// import { OAuth2Server } from './oauth'
+import { OAuth2Server } from './oauth'
 
 describe('constructor', function () {
   it('can be instantiated without any parameter', function () {
-    assert.fail()
+    const server = new OAuth2Server()
+    assert.isDefined(server)
   })
 
   it('can be created with serverOptions', function () {
-    assert.fail()
+    const serverOptions = {
+
+    }
+    const server = new OAuth2Server({serverOptions})
+    assert.isDefined(server)
   })
 
   it('can be created with model', function () {
-    assert.fail()
+    const model = {}
+    const server = new OAuth2Server({model})
+    assert.isDefined(server)
   })
 
   it('can be created with routes', function () {
