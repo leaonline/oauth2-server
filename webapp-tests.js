@@ -6,6 +6,12 @@ import { app } from './webapp'
 
 const toUrl = path => Meteor.absoluteUrl(path)
 
+const finish = (res, done, err) => {
+  res.writeHead(200)
+  res.end()
+  done(err)
+}
+
 describe('webapp', function () {
   it('creates a GET route using .get', function (done) {
     const route = Random.id()
@@ -15,9 +21,9 @@ describe('webapp', function () {
     app.get(`/${route}`, function (req, res, next) {
       try {
         assert.equal(req.query.test, test)
-        done()
+        finish(res, done)
       } catch (e) {
-        done(e)
+        finish(res, done, e)
       }
     })
 
@@ -32,11 +38,11 @@ describe('webapp', function () {
     const url = toUrl(route)
 
     app.get(`/${route}`, function (req, res, next) {
-      done(new Error('expected GET route to not be callable via POST request'))
+      finish(res, done, new Error('expected GET route to not be callable via POST request'))
     })
 
-    app.post(`/${route}`, function () {
-      done()
+    app.post(`/${route}`, function (req, res) {
+      finish(res, done)
     })
 
     HTTP.post(url, {
@@ -52,9 +58,9 @@ describe('webapp', function () {
     app.post(`/${route}`, function (req, res, next) {
       try {
         assert.equal(req.body.test, test)
-        done()
+        finish(res, done)
       } catch (e) {
-        done(e)
+        finish(res, done, e)
       }
     })
 
@@ -70,9 +76,9 @@ describe('webapp', function () {
     app.post(`/${route}`, function (req, res, next) {
       try {
         assert.equal(req.headers['content-type'], 'application/x-www-form-urlencoded')
-        done()
+        finish(res, done)
       } catch (e) {
-        done(e)
+        finish(res, done, e)
       }
     })
 
@@ -84,11 +90,11 @@ describe('webapp', function () {
     const url = toUrl(route)
 
     app.post(`/${route}`, function (req, res, next) {
-      done(new Error('expected GET route to not be callable via POST request'))
+      finish(res, done, new Error('expected GET route to not be callable via POST request'))
     })
 
-    app.get(`/${route}`, function () {
-      done()
+    app.get(`/${route}`, function (req, res) {
+      finish(res, done)
     })
 
     HTTP.get(url)
@@ -106,7 +112,7 @@ describe('webapp', function () {
 
     app.use(`/${route}`, function (req, res, next) {
       if (checkDone(req.method.toLowerCase())) {
-        return done()
+        return finish(res, done)
       } else {
         return next()
       }
