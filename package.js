@@ -22,7 +22,7 @@ Package.onTest(function (api) {
   api.use('ecmascript')
   api.use('mongo')
   api.use('dburles:mongo-collection-instances')
-  //  api.use('leaonline:oauth2-server')
+  api.use('leaonline:oauth2-model')
   api.use('meteortesting:mocha')
   api.use('practicalmeteor:chai')
   //  api.mainModule('oauth-tests.js', 'server')
@@ -31,7 +31,6 @@ Package.onTest(function (api) {
     'error-tests.js',
     'validation-tests.js',
     'webapp-tests.js',
-    'model-tests.js',
     'oauth-tests.js'
   ], 'server')
 })

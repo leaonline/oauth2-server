@@ -1,6 +1,5 @@
 /* global Accounts, Npm */
 import { Meteor } from 'meteor/meteor'
-import { Model } from './model'
 import { validate, requiredAuthorizeGetParams, requiredAuthorizePostParams } from './validation'
 import { app } from './webapp'
 import { errorHandler } from './error'
@@ -49,8 +48,8 @@ const secureHandler = (self, handler) => bind(function (req, res, next) {
 
 export const OAuth2Server = class OAuth2Server {
   constructor ({ serverOptions, model, routes, debug }) {
-    this.config = { serverOptions, model, routes }
-    this.model = new Model(model)
+    this.config = { serverOptions, routes }
+    this.model = model
     this.app = app
     this.debug = debug
 
