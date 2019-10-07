@@ -1,3 +1,4 @@
+/* eslint-env mocha */
 import { Meteor } from 'meteor/meteor'
 import { HTTP } from 'meteor/http'
 import { Random } from 'meteor/random'
@@ -32,7 +33,7 @@ describe('webapp', function () {
     })
   })
 
-  it ('creates a GET route which is not reachable via POST request', function (done) {
+  it('creates a GET route which is not reachable via POST request', function (done) {
     const route = Random.id()
     const test = Random.id()
     const url = toUrl(route)
@@ -69,7 +70,7 @@ describe('webapp', function () {
     })
   })
 
-  it ('transforms any request to application/x-www-form-urlencoded', function (done) {
+  it('transforms any request to application/x-www-form-urlencoded', function (done) {
     const route = Random.id()
     const url = toUrl(route)
 
@@ -85,7 +86,7 @@ describe('webapp', function () {
     HTTP.post(url)
   })
 
-  it ('creates a POST route which is not reachable via GET request', function (done) {
+  it('creates a POST route which is not reachable via GET request', function (done) {
     const route = Random.id()
     const url = toUrl(route)
 
@@ -104,7 +105,7 @@ describe('webapp', function () {
     const route = Random.id()
     const url = toUrl(route)
 
-    const finished = {get: false, post: false}
+    const finished = { get: false, post: false }
     const checkDone = method => {
       finished[method] = true
       return (finished.get && finished.post)

@@ -1,15 +1,16 @@
-import { validate, requiredAuthorizeGetParams, requiredAuthorizePostParams } from './validation'
+/* eslint-env mocha */
+import { assert } from 'meteor/practicalmeteor:chai'
+import { validate } from './validation'
 
 describe('validation', function () {
   describe('validate', function () {
-
     it('returns false if one of the params is falsey', function () {
       [
         validate(),
         validate(null, {}),
         validate({}, null),
-        validate(void 0, {}),
-        validate({}, void 0),
+        validate(undefined, {}),
+        validate({}, undefined)
       ].forEach(value => assert.isFalse(value))
     })
 
@@ -19,7 +20,7 @@ describe('validation', function () {
         validate({ a: 'a' }, { a: String }),
         validate({ b: 1 }, { b: Number }),
         validate({ c: new Date() }, { c: Date }),
-        validate({ d: true }, { d: Boolean }),
+        validate({ d: true }, { d: Boolean })
       ].forEach(value => assert.isTrue(value))
     })
   })

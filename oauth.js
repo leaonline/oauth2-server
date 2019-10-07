@@ -15,7 +15,7 @@ const { Response } = OAuthserver
 
 const getDebugMiddleWare = instance => (req, res, next) => {
   if (instance.debug === true) {
-    const baseUrl = req.originalUrl.split('?')[ 0 ]
+    const baseUrl = req.originalUrl.split('?')[0]
     console.log('[OAuth2Server]', req.method, baseUrl, req.query || req.body)
   }
   return next()
@@ -80,8 +80,8 @@ export const OAuth2Server = class OAuth2Server {
   authorizeHandler (options) {
     const self = this
     return function (req, res, next) {
-      let request = new Request(req)
-      let response = new Response(res)
+      const request = new Request(req)
+      const response = new Response(res)
       return self.oauth.authorize(request, response, options)
         .then(function (code) {
           res.locals.oauth = { code: code }
@@ -99,8 +99,8 @@ export const OAuth2Server = class OAuth2Server {
     const self = this
     return function (req, res, next) {
       console.log('auth handler')
-      let request = new Request(req)
-      let response = new Response(res)
+      const request = new Request(req)
+      const response = new Response(res)
       return self.oauth.authenticate(request, response, options)
         .then(function (token) {
           req.data = Object.assign({}, req.data, token)
@@ -167,7 +167,7 @@ export const OAuth2Server = class OAuth2Server {
     }
 
     const route = (method, url, handler) => {
-      const targetFn = self.app[ method ]
+      const targetFn = self.app[method]
       if (self.debug) {
         targetFn.call(self.app, url, debugMiddleware)
       }
@@ -194,21 +194,21 @@ export const OAuth2Server = class OAuth2Server {
     }
 
     route('use', accessTokenUrl, function (req, res, next) {
-      let request = new Request(req)
-      let response = new Response(res)
+      const request = new Request(req)
+      const response = new Response(res)
       console.log('access token::::', req.body)
       return self.oauth.token(request, response)
         .then(function (token) {
           res.writeHead(200, {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-store',
-            'Pragma': 'no-cache'
+            Pragma: 'no-cache'
           })
           const body = JSON.stringify({
-            'access_token': token.accessToken,
-            'token_type': 'bearer',
-            'expires_in': token.accessTokenExpiresAt,
-            'refresh_token': token.refreshToken
+            access_token: token.accessToken,
+            token_type: 'bearer',
+            expires_in: token.accessTokenExpiresAt,
+            refresh_token: token.refreshToken
           })
           res.end(body)
         })
@@ -313,7 +313,7 @@ export const OAuth2Server = class OAuth2Server {
             state: req.body.state
           })
           const finalRedirectUri = `${req.body.redirect_uri}?${query}`
-          res.writeHead(302, { 'Location': finalRedirectUri })
+          res.writeHead(302, { Location: finalRedirectUri })
           res.end()
         }))
         .catch(function (err) {

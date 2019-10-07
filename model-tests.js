@@ -1,3 +1,6 @@
+/* eslint-env mocha */
+import { Meteor } from 'meteor/meteor'
+import { Mongo } from 'meteor/mongo'
 import { Random } from 'meteor/random'
 import { assert } from 'meteor/practicalmeteor:chai'
 import { Model, DefaultModelConfig } from './model'
@@ -16,16 +19,7 @@ const assertCollection = name => {
   assert.equal(collection.constructor.name, 'Collection')
 }
 
-
-const dropCollection = name => {
-  const collection = Mongo.Collection.get(name)
-  if (collection) {
-    collection._rawCollection().drop()
-  }
-}
-
 describe('model', function () {
-
   let randomAccessTokenName = Random.id()
   let randomRefreshTokenName = Random.id()
   let randomAuthCodeName = Random.id()
@@ -38,9 +32,7 @@ describe('model', function () {
     randomClientsName = Random.id()
   })
 
-
   describe('constructor', function () {
-
     it('can be created with defaults', function () {
       assert.isDefined(new Model())
       assertCollection(DefaultModelConfig.accessTokensCollectionName)
@@ -84,8 +76,8 @@ describe('model', function () {
     it('creates a client with minimum required credentials', function () {
       const model = new Model()
       const title = Random.id()
-      const redirectUris = [ Meteor.absoluteUrl(`/${Random.id()}`) ]
-      const grants = [ GrantTypes.authorization_code ]
+      const redirectUris = [Meteor.absoluteUrl(`/${Random.id()}`)]
+      const grants = [GrantTypes.authorization_code]
       const clientDocId = Promise.await(model.createClient({ title, redirectUris, grants }))
       const clientDoc = Mongo.Collection.get(DefaultModelConfig.clientsCollectionName).findOne(clientDocId)
 
@@ -99,21 +91,20 @@ describe('model', function () {
   })
 
   describe('getClient', function () {
-
     let model
     let clientDoc
 
     beforeEach(function () {
       model = new Model()
       const title = Random.id()
-      const redirectUris = [ Meteor.absoluteUrl(`/${Random.id()}`) ]
-      const grants = [ GrantTypes.authorization_code ]
+      const redirectUris = [Meteor.absoluteUrl(`/${Random.id()}`)]
+      const grants = [GrantTypes.authorization_code]
       const clientDocId = Promise.await(model.createClient({ title, redirectUris, grants }))
       clientDoc = Mongo.Collection.get(DefaultModelConfig.clientsCollectionName).findOne(clientDocId)
     })
 
     it('returns a client by clientId', function () {
-      const {clientId} = clientDoc
+      const { clientId } = clientDoc
       const actualClientDoc = Promise.await(model.getClient(clientId))
       assert.deepEqual(actualClientDoc, clientDoc)
     })
@@ -124,21 +115,20 @@ describe('model', function () {
     })
 
     it('returns a client by clientId and clientSecret', function () {
-      const {clientId} = clientDoc
-      const {secret} = clientDoc
+      const { clientId } = clientDoc
+      const { secret } = clientDoc
       const actualClientDoc = Promise.await(model.getClient(clientId, secret))
       assert.deepEqual(actualClientDoc, clientDoc)
     })
 
-    it ('returns false if clientSecret is incorrect', function () {
-      const {clientId} = clientDoc
+    it('returns false if clientSecret is incorrect', function () {
+      const { clientId } = clientDoc
       const falsey = Promise.await(model.getClient(clientId, Random.id()))
       assert.isFalse(falsey)
     })
   })
 
   describe('saveToken', function () {
-
     it('saves an access token', function () {
       assert.fail()
     })
@@ -150,11 +140,9 @@ describe('model', function () {
     it('optionally allows to assign extended values', function () {
       assert.fail()
     })
-
   })
 
   describe('getAccessToken', function () {
-
     it('returns a saved token', function () {
       assert.fail()
     })
@@ -206,5 +194,4 @@ describe('model', function () {
   revokeToken
   validateScope
   */
-
 })

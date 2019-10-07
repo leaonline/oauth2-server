@@ -22,8 +22,8 @@ export const validate = (actualParams, requiredParams) => {
     return false
   }
   const checkParam = requiredParamKey => {
-    actual = actualParams[ requiredParamKey ]
-    expected = requiredParams[ requiredParamKey ]
+    actual = actualParams[requiredParamKey]
+    expected = requiredParams[requiredParamKey]
     check(actual, expected) // use console.log(requiredParamKey, actual, expected)
   }
   let expected, actual

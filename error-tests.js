@@ -1,11 +1,9 @@
+/* eslint-env mocha */
 import { Random } from 'meteor/random'
+import { assert } from 'meteor/practicalmeteor:chai'
 import { errorHandler } from './error'
 
 class Res {
-  constructor () {
-
-  }
-
   writeHead (httpStatus, options) {
     this.httpStatus = httpStatus
     this.options = options
@@ -17,8 +15,7 @@ class Res {
 }
 
 describe('errorHandler', function () {
-
-  it ('writes the error into a result body', function () {
+  it('writes the error into a result body', function () {
     const res = new Res()
 
     const error = Random.id()
@@ -38,7 +35,7 @@ describe('errorHandler', function () {
       status,
       state,
       originalError,
-      debug: false,
+      debug: false
     })
 
     const { httpStatus } = res

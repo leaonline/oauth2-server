@@ -2,11 +2,10 @@ import { Meteor } from 'meteor/meteor'
 import { Mongo } from 'meteor/mongo'
 import { Random } from 'meteor/random'
 
-let AccessTokens = void 0
-let RefreshTokens = void 0
-let Clients = void 0
-let AuthCodes = void 0
-let debug = void 0
+let AccessTokens
+let RefreshTokens
+let Clients
+let AuthCodes
 
 const bind = fn => Meteor.bindEnvironment(fn)
 
@@ -133,7 +132,6 @@ const getRefreshToken = bind(function (refreshToken) {
   return RefreshTokens.findOne({ refreshToken })
 })
 
-
 export const DefaultModelConfig = {
   accessTokensCollectionName: 'oauth_access_tokens',
   refreshTokensCollectionName: 'oauth_refresh_tokens',
@@ -184,7 +182,7 @@ function OAuthMeteorModel (config = {}) {
  */
 
 OAuthMeteorModel.prototype.log = function (...args) {
-  if (debug === true) {
+  if (this.debug === true) {
     console.log(...args)
   }
 }
@@ -241,10 +239,10 @@ OAuthMeteorModel.prototype.getClient = async function (clientId, secret) {
  user (Object)
  */
 OAuthMeteorModel.prototype.saveToken = async function (tokenDoc, clientDoc, userDoc) {
-  this.log(`[OAuth2Server] MODEL saveAccessToken:`)
-  this.log(`with token `, tokenDoc)
-  this.log(`with client `, clientDoc)
-  this.log(`with user `, userDoc)
+  this.log('[OAuth2Server] MODEL saveAccessToken:')
+  this.log('with token ', tokenDoc)
+  this.log('with client ', clientDoc)
+  this.log('with user ', userDoc)
 
   return saveToken(tokenDoc, clientDoc, userDoc)
 }
@@ -267,7 +265,7 @@ OAuthMeteorModel.prototype.getAuthorizationCode = async function (authorizationC
  An Object representing the authorization code and associated data.
  */
 OAuthMeteorModel.prototype.saveAuthorizationCode = async function (code, client, user) {
-  this.log(`[OAuth2Server] MODEL saveAuthCode (code:`, code, `clientId: `, client, `user: `, user, `)`)
+  this.log('[OAuth2Server] MODEL saveAuthCode (code:', code, 'clientId: ', client, 'user: ', user, ')')
 
   await saveAuthorizationCode(code, client, user)
   return Object.assign({}, code, { client: { id: client._id }, user })
@@ -319,7 +317,7 @@ OAuthMeteorModel.prototype.getRefreshToken = async function (refreshToken) {
 OAuthMeteorModel.prototype.grantTypeAllowed = async function (clientId, grantType) {
   this.log('[OAuth2Server]', 'MODEL grantTypeAllowed (clientId:', clientId, ', grantType:', grantType + ')')
 
-  return [ 'authorization_code', 'refresh_token' ].includes(grantType)
+  return ['authorization_code', 'refresh_token'].includes(grantType)
 }
 
 export const Model = OAuthMeteorModel
