@@ -15,7 +15,7 @@ const { Response } = OAuthserver
 
 const getDebugMiddleWare = instance => (req, res, next) => {
   if (instance.debug === true) {
-    const baseUrl = req.originalUrl.split('?')[0]
+    const baseUrl = req.originalUrl.split('?')[ 0 ]
     console.log('[OAuth2Server]', req.method, baseUrl, req.query || req.body)
   }
   return next()
@@ -48,7 +48,7 @@ const secureHandler = (self, handler) => bind(function (req, res, next) {
 })
 
 export const OAuth2Server = class OAuth2Server {
-  constructor ({ serverOptions, model, routes, debug }) {
+  constructor ({ serverOptions, model, routes, debug } = {}) {
     this.config = { serverOptions, model, routes }
     this.model = new Model(model)
     this.app = app
@@ -57,7 +57,7 @@ export const OAuth2Server = class OAuth2Server {
     const oauthOptions = Object.assign({ model: this.model }, serverOptions)
     this.oauth = new OAuthserver(oauthOptions)
 
-    const authorizedPubName = serverOptions.authorizedPublicationName || 'authorizedOAuth'
+    const authorizedPubName = (serverOptions && serverOptions.authorizedPublicationName) || 'authorizedOAuth'
     publishAuhorizedClients(authorizedPubName)
     this.initRoutes(routes)
     return this
@@ -167,7 +167,7 @@ export const OAuth2Server = class OAuth2Server {
     }
 
     const route = (method, url, handler) => {
-      const targetFn = self.app[method]
+      const targetFn = self.app[ method ]
       if (self.debug) {
         targetFn.call(self.app, url, debugMiddleware)
       }

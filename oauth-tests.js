@@ -10,19 +10,43 @@ describe('constructor', function () {
 
   it('can be created with serverOptions', function () {
     const serverOptions = {
-
+      addAcceptedScopesHeader: true,
+      addAuthorizedScopesHeader: true,
+      allowBearerTokensInQueryString: false,
+      allowEmptyState: false,
+      authorizationCodeLifetime: 300,
+      accessTokenLifetime: 3600,
+      refreshTokenLifetime: 1209600,
+      allowExtendedTokenAttributes: false,
+      requireClientAuthentication: true
     }
     const server = new OAuth2Server({serverOptions})
     assert.isDefined(server)
+    assert.isDefined(server.config)
+    assert.isDefined(server.model)
+    assert.equal(server.config.serverOptions, serverOptions)
   })
 
-  it('can be created with model', function () {
-    const model = {}
-    const server = new OAuth2Server({model})
+  it ('throws if server options include properties that are not in schema', function () {
+    assert.fail()
+  })
+  
+  it ('can be created with custom config for default model', function () {
+    
+  })
+
+  it('can be created with a custom model', function () {
+    const model = {
+      getAccessToken: function() {
+        return new Promise('works!');
+      }
+    }
+    const server = new OAuth2Server({ model })
     assert.isDefined(server)
+    assert.deepEqual(server.model, model)
   })
 
-  it('can be created with routes', function () {
+  it('can be created with custom routes', function () {
     assert.fail()
   })
 })
@@ -58,23 +82,22 @@ describe('initRoutes', function () {
     assert.fail()
   })
 
-  it('creates a POT route for fallback', function () {
+  it('creates a POST route for fallback', function () {
     assert.fail()
   })
 })
 
 describe('registerClient', function () {
-  it('registers a new client', function () {
-    assert.fail()
-  })
 
   it('validates input parameters', function () {
     assert.fail()
   })
 })
 
-describe('OAuth2 workflow', function () {
-  it('is not yet implemented', function () {
-    assert.fail()
+describe('workflows', function () {
+  describe('authorization code', function () {
+    it('is not yet implemented', function () {
+      assert.fail()
+    })
   })
 })
