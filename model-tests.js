@@ -109,6 +109,12 @@ describe('model', function () {
       assert.deepEqual(actualClientDoc, clientDoc)
     })
 
+    it ('returns a client on null secret', function () {
+      const { clientId } = clientDoc
+      const actualClientDoc = Promise.await(model.getClient(clientId, null))
+      assert.deepEqual(actualClientDoc, clientDoc)
+    })
+
     it('returns false if no client is found', function () {
       const falsey = Promise.await(model.getClient(Random.id()))
       assert.isFalse(falsey)

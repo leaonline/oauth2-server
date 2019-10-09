@@ -47,7 +47,10 @@ export const createClient = bind(function ({ title, homepage, description, priva
  */
 
 export const getClient = bind(function (clientId, secret) {
-  const clientDoc = collections.Clients.findOne({ clientId, secret })
+  const clientDoc = collections.Clients.findOne({
+    clientId,
+    secret: secret || undefined // secret can be undefined or null but should act as the same
+  })
   return clientDoc || false
 })
 
@@ -88,10 +91,12 @@ export const saveAuthorizationCode = bind(function saveAuthCode (code, client, u
   const { authorizationCode } = code
   const { expiresAt } = code
   const { redirectUri } = code
-  return collections.AuthCodes.upsert({ authorizationCode }, {
+
+  collections.AuthCodes.upsert({ authorizationCode }, {
     authorizationCode,
     expiresAt,
     redirectUri,
+    scope: code.scope,
     client: {
       id: client.client_id
     },
@@ -99,6 +104,7 @@ export const saveAuthorizationCode = bind(function saveAuthCode (code, client, u
       id: user.id
     }
   })
+  return collections.AuthCodes.findOne({ authorizationCode })
 })
 
 /**

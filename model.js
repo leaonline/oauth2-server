@@ -1,4 +1,4 @@
-import { Mongo } from "meteor/mongo"
+import { createCollection } from './utils'
 import {
   collections,
   createClient,
@@ -20,16 +20,6 @@ export const DefaultModelConfig = {
   debug: false
 }
 
-const createCollection = (passedCollection, collectionName) => {
-  const existingCollection = Mongo.Collection.get(collectionName)
-  if (existingCollection) {
-    return existingCollection
-  }
-  if (passedCollection) {
-    return passedCollection
-  }
-  return new Mongo.Collection(collectionName)
-}
 
 /*
     Model specification
@@ -104,8 +94,7 @@ OAuthMeteorModel.prototype.createClient = async function ({ title, homepage, des
  grants (Array)
  */
 OAuthMeteorModel.prototype.getClient = async function (clientId, secret) {
-  this.log(`[OAuth2Server] MODEL getClient (clientId: ${clientId})`)
-
+  this.log(`[OAuth2Server] MODEL getClient (clientId: ${clientId}) (secret: ${secret})`)
   return getClient(clientId, secret)
 }
 
@@ -135,9 +124,10 @@ OAuthMeteorModel.prototype.saveToken = async function (tokenDoc, clientDoc, user
  @returns An Object representing the authorization code and associated data.
  */
 OAuthMeteorModel.prototype.getAuthorizationCode = async function (authorizationCode) {
-  this.log('[OAuth2Server]', 'MODEL getAuthCode (authCode: ' + authorizationCode + ')')
-
-  return getAuthorizationCode(authorizationCode)
+  this.log('[OAuth2Server]', 'MODEL getAuthorizationCode (authCode: ' + authorizationCode + ')')
+  const doc = await getAuthorizationCode(authorizationCode)
+  console.log(doc)
+  return doc
 }
 
 /**
@@ -148,10 +138,9 @@ OAuthMeteorModel.prototype.getAuthorizationCode = async function (authorizationC
  * @returns {Promise<Object>}
  */
 OAuthMeteorModel.prototype.saveAuthorizationCode = async function (code, client, user) {
-  this.log('[OAuth2Server] MODEL saveAuthCode (code:', code, 'clientId: ', client, 'user: ', user, ')')
+  this.log('[OAuth2Server] MODEL saveAuthorizationCode (code:', code, 'client: ', client, 'user: ', user, ')')
 
-  await saveAuthorizationCode(code, client, user)
-  return Object.assign({}, code, { client: { id: client._id }, user })
+  return await saveAuthorizationCode(code, client, user)
 }
 
 /**

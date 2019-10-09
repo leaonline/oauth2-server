@@ -1,9 +1,18 @@
 /* global Accounts, Npm */
 import { Meteor } from 'meteor/meteor'
+import { check } from 'meteor/check'
 import { Model } from './model'
-import { validate, requiredAuthorizeGetParams, requiredAuthorizePostParams } from './validation'
+import {
+  validate,
+  requiredAuthorizeGetParams,
+  requiredAuthorizePostParams,
+  OAuth2ServerOptionsSchema,
+  requiredAccessTokenPostParams
+} from './validation'
 import { app } from './webapp'
 import { errorHandler } from './error'
+import { isModelInstance } from './utils'
+import { OAuth2ServerDefaults } from './defaults'
 
 const URLSearchParams = require('url').URLSearchParams
 const OAuthserver = Npm.require('oauth2-server')
@@ -48,9 +57,25 @@ const secureHandler = (self, handler) => bind(function (req, res, next) {
 })
 
 export const OAuth2Server = class OAuth2Server {
-  constructor ({ serverOptions, model, routes, debug } = {}) {
-    this.config = { serverOptions, model, routes }
-    this.model = new Model(model)
+  constructor ({ serverOptions = {}, model, routes, debug } = {}) {
+    check(serverOptions, OAuth2ServerOptionsSchema.serverOptions)
+
+    this.config = {
+      serverOptions: Object.assign({}, OAuth2ServerDefaults.serverOptions, serverOptions),
+      routes: Object.assign({}, OAuth2ServerDefaults.routes, routes)
+    }
+
+    // if we have passed our own model instance
+    // we directly assign it as model, otherwise
+    // we save the config and instantiate our default model
+    if (isModelInstance(model)) {
+      this.config.model = null
+      this.model = model
+    } else {
+      this.config.model = Object.assign({}, OAuth2ServerDefaults.model, model)
+      this.model = new Model(this.config.model)
+    }
+
     this.app = app
     this.debug = debug
 
@@ -74,7 +99,7 @@ export const OAuth2Server = class OAuth2Server {
    */
   registerClient ({ title, homepage, description, privacyLink, redirectUris, grants }) {
     const self = this
-    return self.model.createClient({ title, homepage, description, privacyLink, redirectUris, grants })
+    return Promise.await(self.model.createClient({ title, homepage, description, privacyLink, redirectUris, grants }))
   }
 
   authorizeHandler (options) {
@@ -98,7 +123,6 @@ export const OAuth2Server = class OAuth2Server {
   authenticateHandler (options) {
     const self = this
     return function (req, res, next) {
-      console.log('auth handler')
       const request = new Request(req)
       const response = new Response(res)
       return self.oauth.authenticate(request, response, options)
@@ -137,12 +161,30 @@ export const OAuth2Server = class OAuth2Server {
     const self = this
     const debugMiddleware = getDebugMiddleWare(self)
 
+    const validateResponseType = (req, res) => {
+      const responseType = req.method.toLowerCase() === 'get'
+        ? req.query.response_type
+        : req.body.response_type
+      if (responseType !== 'code' && responseType !== 'token') {
+        return errorHandler(res, {
+          status: 415,
+          error: 'unsupported_response_type',
+          description: 'The response type is not supported by the authorization server.',
+          state: req.query.state,
+          debug: self.debug
+        })
+      }
+      return true
+    }
+
     const getValidatedClient = (req, res) => {
       const clientId = req.method.toLowerCase() === 'get' ? req.query.client_id : req.body.client_id
-      const client = Promise.await(self.model.getClient(clientId))
+      const secret = req.method.toLowerCase() === 'get' ? req.query.client_secret : req.body.client_secret
+      const client = Promise.await(self.model.getClient(clientId, secret))
       if (!client) {
         // unauthorized_client - The client is not authorized to request an authorization code using this method.
         return errorHandler(res, {
+          status: 401,
           error: 'unauthorized_client',
           description: 'This client is not authorized to use this service',
           state: req.query.state,
@@ -158,9 +200,10 @@ export const OAuth2Server = class OAuth2Server {
       if (redirectUris.indexOf(redirectUri) === -1) {
         return errorHandler(res, {
           error: 'invalid_request',
-          description: 'Invalid redirect URI',
+          description: `Invalid redirection uri ${redirectUri}`,
           state: req.query.state,
-          debug: self.debug
+          debug: self.debug,
+          status: 400
         })
       }
       return redirectUri
@@ -193,10 +236,148 @@ export const OAuth2Server = class OAuth2Server {
       }))
     }
 
-    route('use', accessTokenUrl, function (req, res, next) {
+
+    // STEP 1: VALIDATE CLIENT REQUEST
+    // Note from https://www.oauth.com/oauth2-servers/authorization/the-authorization-response/
+    // If there is something wrong with the syntax of the request, such as the redirect_uri or client_id is invalid,
+    // then it’s important not to redirect the user and instead you should show the error message directly.
+    // This is to avoid letting your authorization server be used as an open redirector.
+    route('get', authorizeUrl, function (req, res, next) {
+      if (!validate(req.query, requiredAuthorizeGetParams, self.debug)) {
+        return errorHandler(res, {
+          status: 400,
+          error: 'invalid_request',
+          description: 'One or more request parameters are invalid',
+          state: req.query.state,
+          debug: self.debug
+        })
+      }
+
+      const validResponseType = validateResponseType(req, res)
+      if (!validResponseType) return
+
+      const client = getValidatedClient(req, res)
+      if (!client) return
+
+      const redirectUri = getValidatedRedirectUri(req, res, client)
+      if (!redirectUri) return
+
+      return next()
+    })
+
+    // STEP 2: ADD USER TO THE REQUEST
+    // validate all inputs again, since all inputs
+    // could have been manipulated within form
+    route('post', authorizeUrl, function (req, res, next) {
+      if (!validate(req.body, requiredAuthorizePostParams, self.debug)) {
+        return errorHandler(res, {
+          error: 'invalid_request',
+          description: 'One or more request parameters are invalid',
+          state: req.body.state,
+          debug: self.debug,
+          status: 400
+        })
+      }
+
+      const client = getValidatedClient(req, res)
+      if (!client) return
+
+      const validRedirectUri = getValidatedRedirectUri(req, res, client)
+      if (!validRedirectUri) return
+
+      // token refers here to the Meteor.loginToken,
+      // which is assigned, once the user has been validly logged-in
+      // only valid tokens can be used to find a user
+      // in the Meteor.users collection
+      const user = Meteor.users.findOne({
+        'services.resume.loginTokens.hashedToken': Accounts._hashLoginToken(req.body.token)
+      })
+
+      if (user) {
+        const id = user._id
+        req.user = { id } // TODO add fields from scope
+
+        if ('false' === req.body.allowed) {
+          Meteor.users.update(id, { $pull: { 'oauth.authorizedClients': client.clientId } })
+        } else {
+          Meteor.users.update(id, { $addToSet: { 'oauth.authorizedClients': client.clientId } })
+        }
+
+        // make this work on a post route
+        req.query.allowed = req.body.allowed
+      } else {
+        // we fail already here if no user has been found
+        // since the oauth-node sever would repsond with a
+        // 503 error, while it should be a 400
+        return errorHandler(res, {
+          status: 400,
+          error: 'access_denied',
+          description: 'You are no valid user',
+          state: req.body.state,
+          debug: self.debug
+        })
+      }
+
+      return next()
+    })
+
+    // STEP 3: GENERATE AUTHORIZATION CODE RESPONSE
+    // - use the user form the prior middleware for the authentication handler
+    // - on allow, assign the client_id to the user's authorized clients
+    // - on deny, ...?
+    // - construct the redirect query and redirect to the redirect_uri
+    route('post', authorizeUrl, function (req, res, next) {
       const request = new Request(req)
       const response = new Response(res)
-      console.log('access token::::', req.body)
+      const authorizeOptions = {
+        authenticateHandler: {
+          handle: function (request, response) {
+            return request.user
+          }
+        }
+      }
+
+      return self.oauth.authorize(request, response, authorizeOptions)
+        .then(bind(function (code) {
+          const query = new URLSearchParams({
+            code: code.authorizationCode,
+            user: req.user.id,
+            state: req.body.state
+          })
+          const finalRedirectUri = `${req.body.redirect_uri}?${query}`
+          res.writeHead(302, { Location: finalRedirectUri })
+          res.end()
+        }))
+        .catch(function (err) {
+          errorHandler(res, {
+            originalError: err,
+            error: err.name,
+            description: err.message,
+            status: err.statusCode,
+            state: req.body.state,
+            debug: self.debug
+          })
+        })
+    })
+
+    // STEP 4: GENERATE ACCESS TOKEN RESPONSE
+    // - validate params
+    // - validate authorization code
+    // - issue accessToken and refreshToken
+    route('post', accessTokenUrl, function (req, res, next) {
+      if (!validate(req.body, requiredAccessTokenPostParams, self.debug)) {
+        return errorHandler(res, {
+          status: 400,
+          error: 'invalid_request',
+          description: 'One or more request parameters are invalid',
+          state: req.body.state,
+          debug: self.debug
+        })
+      }
+
+      const request = new Request(req)
+      const response = new Response(res)
+
       return self.oauth.token(request, response)
         .then(function (token) {
           res.writeHead(200, {
@@ -213,113 +394,17 @@ export const OAuth2Server = class OAuth2Server {
           res.end(body)
         })
         .catch(function (err) {
-          // handle error condition
+          console.log(err)
           return errorHandler(res, {
             error: 'unauthorized_client',
             description: err.message,
-            state: req.query.state,
-            debug: self.debug
+            state: req.body.state,
+            debug: self.debug,
+            status: err.statusCode
           })
         })
     })
 
-    // STEP 1: VALIDATE CLIENT REQUEST
-    // Note from https://www.oauth.com/oauth2-servers/authorization/the-authorization-response/
-    // If there is something wrong with the syntax of the request, such as the redirect_uri or client_id is invalid,
-    // then it’s important not to redirect the user and instead you should show the error message directly.
-    // This is to avoid letting your authorization server be used as an open redirector.
-    route('get', authorizeUrl, function (req, res, next) {
-      if (!validate(req.query, requiredAuthorizeGetParams)) {
-        return errorHandler(res, {
-          error: 'invalid_request',
-          description: 'One or more request parameters are invalid',
-          state: req.query.state,
-          debug: self.debug
-        })
-      }
-      const client = getValidatedClient(req, res)
-      getValidatedRedirectUri(req, res, client)
-      return next()
-    })
-
-    // STEP 2: ADD USER TO THE REQUEST
-    // validate all inputs again, since all inputs
-    // could have been manipulated within form
-    route('post', authorizeUrl, function (req, res, next) {
-      if (!validate(req.body, requiredAuthorizePostParams)) {
-        return errorHandler(res, {
-          error: 'invalid_request',
-          description: 'One or more request parameters are invalid',
-          state: req.query.state,
-          debug: self.debug
-        })
-      }
-
-      const client = getValidatedClient(req, res)
-      getValidatedRedirectUri(req, res, client)
-
-      if (!req.body.token) {
-        return errorHandler(res, {
-          error: 'noToken',
-          description: 'no token is provided',
-          status: 401,
-          state: req.query.state,
-          debug: self.debug
-        })
-      }
-
-      const user = Meteor.users.findOne({
-        'services.resume.loginTokens.hashedToken': Accounts._hashLoginToken(req.body.token)
-      })
-
-      if (!user) {
-        return errorHandler(res, {
-          error: 'invalidToken',
-          description: 'The provided token is invalid',
-          status: 401,
-          state: req.query.state,
-          debug: self.debug
-        })
-      }
-
-      req.user = { id: user._id } // TODO add fields from scope
-      return next()
-    })
-
-    route('post', authorizeUrl, function (req, res, next) {
-      const request = new Request(req)
-      const response = new Response(res)
-      const authorizeOptions = {
-        authenticateHandler: {
-          handle (request, response) {
-            return req.user
-          }
-        }
-      }
-
-      return self.oauth.authorize(request, response, authorizeOptions)
-        .then(bind(function (code) {
-          const clientId = req.body.client_id
-          if (req.body.allow === 'yes') {
-            console.log('update authorized clients')
-            Meteor.users.update(req.user.id, { $addToSet: { 'oauth.authorizedClients': clientId } })
-          } else {
-            Meteor.users.update(req.user.id, { $pull: { 'oauth.authorizedClients': clientId } })
-          }
-
-          const query = new URLSearchParams({
-            code: code.authorizationCode,
-            user: req.user.id,
-            state: req.body.state
-          })
-          const finalRedirectUri = `${req.body.redirect_uri}?${query}`
-          res.writeHead(302, { Location: finalRedirectUri })
-          res.end()
-        }))
-        .catch(function (err) {
-          errorHandler(res, { error: err.message, originalError: err })
-        })
-    })
 
     route('use', fallbackUrl, function (req, res, next) {
       return errorHandler(res, { error: 'route not found', status: 404, debug: self.debug })
