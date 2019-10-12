@@ -1,7 +1,7 @@
 /* eslint-env meteor */
 Package.describe({
   name: 'leaonline:oauth2-server',
-  version: '3.1.0',
+  version: '3.1.1',
   summary: 'OAuth 2 Server (v3) with Meteor bindings',
   git: 'https://github.com/leaonline/oauth2-server.git'
 })

@@ -22,21 +22,25 @@ export const getAccessToken = bind(function (bearerToken) {
  * @private used by  OAuthMeteorModel.prototype.createClient
  */
 
-export const createClient = bind(function ({ title, homepage, description, privacyLink, redirectUris, grants }) {
+export const createClient = bind(function ({ title, homepage, description, privacyLink, redirectUris, grants, clientId, secret }) {
   const existingClient = collections.Clients.findOne({ title, redirectUris })
   if (existingClient) {
-    return collections.Clients.update(existingClient._id, { $set: { description, privacyLink, redirectUris, grants } })
+    const updateValues = { description, privacyLink, redirectUris, grants }
+    if (clientId) updateValues.clientId = clientId
+    if (secret) updateValues.secret = secret
+    return collections.Clients.update(existingClient._id, {
+      $set: updateValues
+    })
   }
-  const clientId = Random.id(16)
-  const secret = Random.id(32)
+
   const clientDocId = collections.Clients.insert({
     title,
     homepage,
     description,
     privacyLink,
     redirectUris,
-    clientId,
-    secret,
+    clientId: clientId || Random.id(16),
+    secret: secret || Random.id(32),
     grants
   })
   return collections.Clients.findOne(clientDocId)

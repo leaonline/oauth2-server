@@ -88,6 +88,24 @@ describe('model', function () {
       assert.deepEqual(clientDoc.redirectUris, redirectUris)
       assert.deepEqual(clientDoc.grants, grants)
     })
+
+    it ('creates a client with an already given clientId and secret', function () {
+      const model = new Model()
+      const title = Random.id()
+      const clientId = Random.id(16)
+      const secret = Random.id(32)
+      const redirectUris = [Meteor.absoluteUrl(`/${Random.id()}`)]
+      const grants = [GrantTypes.authorization_code]
+      const clientDocId = Promise.await(model.createClient({ title, redirectUris, grants, clientId, secret }))
+      const clientDoc = Mongo.Collection.get(DefaultModelConfig.clientsCollectionName).findOne(clientDocId)
+
+      assert.isDefined(clientDoc)
+      assert.equal(clientDoc.clientId, clientId)
+      assert.equal(clientDoc.secret, secret)
+      assert.equal(clientDoc.title, title)
+      assert.deepEqual(clientDoc.redirectUris, redirectUris)
+      assert.deepEqual(clientDoc.grants, grants)
+    })
   })
 
   describe('getClient', function () {
