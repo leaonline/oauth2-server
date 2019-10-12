@@ -95,11 +95,14 @@ export const OAuth2Server = class OAuth2Server {
    * @param description
    * @param privacyLink
    * @param redirectUris
+   * @param grants
+   * @param clientId
+   * @param secret
    * @returns {}
    */
-  registerClient ({ title, homepage, description, privacyLink, redirectUris, grants }) {
+  registerClient ({ title, homepage, description, privacyLink, redirectUris, grants, clientId, secret  }) {
     const self = this
-    return Promise.await(self.model.createClient({ title, homepage, description, privacyLink, redirectUris, grants }))
+    return Promise.await(self.model.createClient({ title, homepage, description, privacyLink, redirectUris, grants , clientId, secret }))
   }
 
   authorizeHandler (options) {

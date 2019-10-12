@@ -20,7 +20,6 @@ export const DefaultModelConfig = {
   debug: false
 }
 
-
 /*
     Model specification
     generateAccessToken(client, user, scope) is optional and should return a String.
@@ -79,13 +78,15 @@ OAuthMeteorModel.prototype.getAccessToken = async function (bearerToken) {
  * @param privacyLink
  * @param redirectUris
  * @param grants
+ * @param clientId
+ * @param secret
  * @return {Promise<Object>}
  */
 
-OAuthMeteorModel.prototype.createClient = async function ({ title, homepage, description, privacyLink, redirectUris, grants }) {
+OAuthMeteorModel.prototype.createClient = async function ({ title, homepage, description, privacyLink, redirectUris, grants, clientId, secret }) {
   this.log(`[OAuth2Server] MODEL createClient (${redirectUris})`)
 
-  return createClient({ title, homepage, description, privacyLink, redirectUris, grants })
+  return createClient({ title, homepage, description, privacyLink, redirectUris, grants, clientId, secret })
 }
 
 /**
@@ -189,7 +190,7 @@ OAuthMeteorModel.prototype.getRefreshToken = async function (refreshToken) {
 OAuthMeteorModel.prototype.grantTypeAllowed = async function (clientId, grantType) {
   this.log('[OAuth2Server]', 'MODEL grantTypeAllowed (clientId:', clientId, ', grantType:', grantType + ')')
 
-  return ['authorization_code', 'refresh_token'].includes(grantType)
+  return [ 'authorization_code', 'refresh_token' ].includes(grantType)
 }
 
 export const Model = OAuthMeteorModel
