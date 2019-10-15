@@ -397,7 +397,7 @@ export const OAuth2Server = class OAuth2Server {
           res.end(body)
         })
         .catch(function (err) {
-          console.log(err)
+          console.error(err)
           return errorHandler(res, {
             error: 'unauthorized_client',
             description: err.message,

@@ -126,9 +126,7 @@ OAuthMeteorModel.prototype.saveToken = async function (tokenDoc, clientDoc, user
  */
 OAuthMeteorModel.prototype.getAuthorizationCode = async function (authorizationCode) {
   this.log('[OAuth2Server]', 'MODEL getAuthorizationCode (authCode: ' + authorizationCode + ')')
-  const doc = await getAuthorizationCode(authorizationCode)
-  console.log(doc)
-  return doc
+  return getAuthorizationCode(authorizationCode)
 }
 
 /**
