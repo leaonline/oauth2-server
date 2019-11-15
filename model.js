@@ -66,7 +66,6 @@ OAuthMeteorModel.prototype.log = function (...args) {
  */
 OAuthMeteorModel.prototype.getAccessToken = async function (bearerToken) {
   this.log('[OAuth2Server]', 'MODEL getAccessToken (bearerToken:', bearerToken, ')')
-
   return getAccessToken(bearerToken)
 }
 
@@ -85,7 +84,6 @@ OAuthMeteorModel.prototype.getAccessToken = async function (bearerToken) {
 
 OAuthMeteorModel.prototype.createClient = async function ({ title, homepage, description, privacyLink, redirectUris, grants, clientId, secret }) {
   this.log(`[OAuth2Server] MODEL createClient (${redirectUris})`)
-
   return createClient({ title, homepage, description, privacyLink, redirectUris, grants, clientId, secret })
 }
 
@@ -113,7 +111,6 @@ OAuthMeteorModel.prototype.saveToken = async function (tokenDoc, clientDoc, user
   this.log('with token ', tokenDoc)
   this.log('with client ', clientDoc)
   this.log('with user ', userDoc)
-
   return saveToken(tokenDoc, clientDoc, userDoc)
 }
 
@@ -138,8 +135,7 @@ OAuthMeteorModel.prototype.getAuthorizationCode = async function (authorizationC
  */
 OAuthMeteorModel.prototype.saveAuthorizationCode = async function (code, client, user) {
   this.log('[OAuth2Server] MODEL saveAuthorizationCode (code:', code, 'client: ', client, 'user: ', user, ')')
-
-  return await saveAuthorizationCode(code, client, user)
+  return saveAuthorizationCode(code, client, user)
 }
 
 /**
@@ -147,7 +143,6 @@ OAuthMeteorModel.prototype.saveAuthorizationCode = async function (code, client,
  */
 OAuthMeteorModel.prototype.revokeAuthorizationCode = async function (code) {
   this.log(`[OAuth2Server] MODEL revokeAuthorizationCode (code: ${code})`)
-
   return revokeAuthorizationCode(code)
 }
 
@@ -161,7 +156,6 @@ OAuthMeteorModel.prototype.revokeAuthorizationCode = async function (code) {
  */
 OAuthMeteorModel.prototype.saveRefreshToken = async function (token, clientId, expires, user) {
   this.log('[OAuth2Server]', 'MODEL saveRefreshToken (token:', token, ', clientId:', clientId, ', user:', user, ', expires:', expires, ')')
-
   return saveRefreshToken(token, clientId, expires, user)
 }
 
@@ -175,7 +169,6 @@ OAuthMeteorModel.prototype.saveRefreshToken = async function (token, clientId, e
  */
 OAuthMeteorModel.prototype.getRefreshToken = async function (refreshToken) {
   this.log('[OAuth2Server]', 'MODEL getRefreshToken (refreshToken: ' + refreshToken + ')')
-
   return getRefreshToken(refreshToken)
 }
 
@@ -187,8 +180,7 @@ OAuthMeteorModel.prototype.getRefreshToken = async function (refreshToken) {
  */
 OAuthMeteorModel.prototype.grantTypeAllowed = async function (clientId, grantType) {
   this.log('[OAuth2Server]', 'MODEL grantTypeAllowed (clientId:', clientId, ', grantType:', grantType + ')')
-
-  return [ 'authorization_code', 'refresh_token' ].includes(grantType)
+  return ['authorization_code', 'refresh_token'].includes(grantType)
 }
 
 export const Model = OAuthMeteorModel

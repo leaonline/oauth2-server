@@ -31,7 +31,7 @@ Package.onTest(function (api) {
   api.addFiles([
     'error-tests.js',
     'validation-tests.js',
-    //'model-tests.js',
+    // 'model-tests.js',
     'webapp-tests.js',
     'oauth-tests.js'
   ], 'server')

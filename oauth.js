@@ -24,7 +24,7 @@ const { Response } = OAuthserver
 
 const getDebugMiddleWare = instance => (req, res, next) => {
   if (instance.debug === true) {
-    const baseUrl = req.originalUrl.split('?')[ 0 ]
+    const baseUrl = req.originalUrl.split('?')[0]
     console.log('[OAuth2Server]', req.method, baseUrl, req.query || req.body)
   }
   return next()
@@ -100,9 +100,9 @@ export const OAuth2Server = class OAuth2Server {
    * @param secret
    * @returns {}
    */
-  registerClient ({ title, homepage, description, privacyLink, redirectUris, grants, clientId, secret  }) {
+  registerClient ({ title, homepage, description, privacyLink, redirectUris, grants, clientId, secret }) {
     const self = this
-    return Promise.await(self.model.createClient({ title, homepage, description, privacyLink, redirectUris, grants , clientId, secret }))
+    return Promise.await(self.model.createClient({ title, homepage, description, privacyLink, redirectUris, grants, clientId, secret }))
   }
 
   authorizeHandler (options) {
@@ -213,7 +213,7 @@ export const OAuth2Server = class OAuth2Server {
     }
 
     const route = (method, url, handler) => {
-      const targetFn = self.app[ method ]
+      const targetFn = self.app[method]
       if (self.debug) {
         targetFn.call(self.app, url, debugMiddleware)
       }
@@ -238,7 +238,6 @@ export const OAuth2Server = class OAuth2Server {
         }
       }))
     }
-
 
     // STEP 1: VALIDATE CLIENT REQUEST
     // Note from https://www.oauth.com/oauth2-servers/authorization/the-authorization-response/
@@ -300,7 +299,7 @@ export const OAuth2Server = class OAuth2Server {
         const id = user._id
         req.user = { id } // TODO add fields from scope
 
-        if ('false' === req.body.allowed) {
+        if (req.body.allowed === 'false') {
           Meteor.users.update(id, { $pull: { 'oauth.authorizedClients': client.clientId } })
         } else {
           Meteor.users.update(id, { $addToSet: { 'oauth.authorizedClients': client.clientId } })
@@ -407,7 +406,6 @@ export const OAuth2Server = class OAuth2Server {
           })
         })
     })
-
 
     route('use', fallbackUrl, function (req, res, next) {
       return errorHandler(res, { error: 'route not found', status: 404, debug: self.debug })

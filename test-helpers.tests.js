@@ -1,4 +1,4 @@
-import { Mongo } from "meteor/mongo"
+import { Mongo } from 'meteor/mongo'
 import { assert } from 'meteor/practicalmeteor:chai'
 
 export const assertCollection = name => {

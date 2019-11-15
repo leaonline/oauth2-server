@@ -1,4 +1,6 @@
 /* eslint-env mocha */
+import { Meteor } from 'meteor/meteor'
+import { Mongo } from 'meteor/mongo'
 import { assert } from 'meteor/practicalmeteor:chai'
 import { Random } from 'meteor/random'
 import { Accounts } from 'meteor/accounts-base'
@@ -64,7 +66,6 @@ describe('constructor', function () {
 
 describe('integration tests of OAuth2 workflows', function () {
   describe('Authorization code workflow', function () {
-
     const routes = {
       accessTokenUrl: `/${Random.id()}`,
       authorizeUrl: `/${Random.id()}`,
@@ -78,6 +79,7 @@ describe('integration tests of OAuth2 workflows', function () {
     const get = (url, params, done, cb) => {
       const fullUrl = Meteor.absoluteUrl(url)
       HTTP.get(fullUrl, params, (err, res) => {
+        if (err) console.error(err)
         try {
           cb(res)
           done()
@@ -90,6 +92,7 @@ describe('integration tests of OAuth2 workflows', function () {
     const post = (url, params, done, cb) => {
       const fullUrl = Meteor.absoluteUrl(url)
       HTTP.post(fullUrl, params, (err, res) => {
+        if (err) console.error(err)
         try {
           cb(res)
           done()
@@ -106,8 +109,8 @@ describe('integration tests of OAuth2 workflows', function () {
     beforeEach(function () {
       const clientDocId = authCodeServer.registerClient({
         title: Random.id(),
-        redirectUris: [ Meteor.absoluteUrl(`/${Random.id()}`) ],
-        grants: [ 'authorization_code' ]
+        redirectUris: [Meteor.absoluteUrl(`/${Random.id()}`)],
+        grants: ['authorization_code']
       })
       clientDoc = ClientCollection.findOne(clientDocId)
       assert.isDefined(clientDoc)
@@ -128,13 +131,11 @@ describe('integration tests of OAuth2 workflows', function () {
     })
 
     describe('Authorization Request', function () {
-
       it('returns a valid response for a valid request', function (done) {
-
         const params = {
           client_id: clientDoc.clientId,
           response_type: 'code',
-          redirect_uri: clientDoc.redirectUris[ 0 ],
+          redirect_uri: clientDoc.redirectUris[0],
           state: Random.id()
         }
         get(routes.authorizeUrl, { params }, done, res => {
@@ -156,7 +157,7 @@ describe('integration tests of OAuth2 workflows', function () {
         const params = {
           client_id: clientDoc.clientId,
           response_type: Random.id(),
-          redirect_uri: clientDoc.redirectUris[ 0 ],
+          redirect_uri: clientDoc.redirectUris[0],
           state: Random.id()
         }
         get(routes.authorizeUrl, { params }, done, res => {
@@ -170,7 +171,7 @@ describe('integration tests of OAuth2 workflows', function () {
         const params = {
           client_id: Random.id(),
           response_type: 'code',
-          redirect_uri: clientDoc.redirectUris[ 0 ],
+          redirect_uri: clientDoc.redirectUris[0],
           state: Random.id()
         }
         get(routes.authorizeUrl, { params }, done, (res) => {
@@ -202,7 +203,7 @@ describe('integration tests of OAuth2 workflows', function () {
         const params = {
           client_id: clientDoc.clientId,
           response_type: 'code',
-          redirect_uri: clientDoc.redirectUris[ 0 ],
+          redirect_uri: clientDoc.redirectUris[0],
           state: Random.id(),
           token: user.token,
           allowed: undefined
@@ -210,10 +211,10 @@ describe('integration tests of OAuth2 workflows', function () {
 
         post(routes.authorizeUrl, { params }, done, res => {
           assert.equal(res.statusCode, 302)
-          const queryParamsRegex = new RegExp(`code=.+\&user=${user._id}\&state=${params.state}`, 'g')
+          const queryParamsRegex = new RegExp(`code=.+&user=${user._id}&state=${params.state}`, 'g')
           const location = res.headers.location.split('?')
-          assert.equal(location[ 0 ], clientDoc.redirectUris[ 0 ])
-          assert.isTrue(queryParamsRegex.test(location[ 1 ]))
+          assert.equal(location[0], clientDoc.redirectUris[0])
+          assert.isTrue(queryParamsRegex.test(location[1]))
         })
       })
 
@@ -221,7 +222,7 @@ describe('integration tests of OAuth2 workflows', function () {
         const params = {
           client_id: clientDoc.clientId,
           response_type: 'code',
-          redirect_uri: clientDoc.redirectUris[ 0 ],
+          redirect_uri: clientDoc.redirectUris[0],
           state: Random.id(),
           token: Random.id(),
           allowed: undefined
@@ -237,7 +238,7 @@ describe('integration tests of OAuth2 workflows', function () {
         const params = {
           client_id: clientDoc.clientId,
           response_type: 'code',
-          redirect_uri: clientDoc.redirectUris[ 0 ],
+          redirect_uri: clientDoc.redirectUris[0],
           state: Random.id(),
           token: user.token,
           allowed: 'false'
@@ -268,7 +269,7 @@ describe('integration tests of OAuth2 workflows', function () {
         authCodeServer.model.saveAuthorizationCode({
           authorizationCode,
           expiresAt,
-          redirectUri: clientDoc.redirectUris[ 0 ]
+          redirectUri: clientDoc.redirectUris[0]
         }, { client_id: clientDoc.clientId }, { id: user._id })
 
         const params = {
@@ -293,14 +294,14 @@ describe('integration tests of OAuth2 workflows', function () {
         authCodeServer.model.saveAuthorizationCode({
           authorizationCode,
           expiresAt,
-          redirectUri: clientDoc.redirectUris[ 0 ]
+          redirectUri: clientDoc.redirectUris[0]
         }, {}, { id: user._id })
 
         const params = {
           code: authorizationCode,
           client_id: clientDoc.clientId,
           client_secret: Random.id(),
-          redirect_uri: clientDoc.redirectUris[ 0 ],
+          redirect_uri: clientDoc.redirectUris[0],
           state: Random.id(),
           grant_type: 'authorization_code'
         }
@@ -318,7 +319,7 @@ describe('integration tests of OAuth2 workflows', function () {
           code: Random.id(),
           client_id: clientDoc.clientId,
           client_secret: clientDoc.secret,
-          redirect_uri: clientDoc.redirectUris[ 0 ],
+          redirect_uri: clientDoc.redirectUris[0],
           state: Random.id(),
           grant_type: 'authorization_code'
         }
@@ -339,15 +340,14 @@ describe('integration tests of OAuth2 workflows', function () {
         authCodeServer.model.saveAuthorizationCode({
           authorizationCode,
           expiresAt,
-          redirectUri: clientDoc.redirectUris[ 0 ]
+          redirectUri: clientDoc.redirectUris[0]
         }, {}, { id: user._id })
-
 
         const params = {
           code: authorizationCode,
           client_id: clientDoc.clientId,
           client_secret: clientDoc.secret,
-          redirect_uri: clientDoc.redirectUris[ 0 ],
+          redirect_uri: clientDoc.redirectUris[0],
           state: Random.id(),
           grant_type: 'authorization_code'
         }
@@ -357,16 +357,15 @@ describe('integration tests of OAuth2 workflows', function () {
 
           const headers = res.headers
           console.log(headers)
-          assert.equal(headers[ 'content-type' ], 'application/json')
-          assert.equal(headers[ 'cache-control' ], 'no-store')
-          assert.equal(headers[ 'pragma' ], 'no-cache')
+          assert.equal(headers['content-type'], 'application/json')
+          assert.equal(headers['cache-control'], 'no-store')
+          assert.equal(headers.pragma, 'no-cache')
 
           const body = res.data
           assert.isDefined(body.access_token)
           assert.isDefined(body.expires_in)
           assert.isDefined(body.refresh_token)
         })
-
       })
     })
   })

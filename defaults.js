@@ -10,7 +10,7 @@ export const OAuth2ServerDefaults = {
     allowExtendedTokenAttributes: false,
     requireClientAuthentication: true
   },
-  responseTypes:{
+  responseTypes: {
 
   },
   model: {

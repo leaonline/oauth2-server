@@ -89,7 +89,7 @@ describe('model', function () {
       assert.deepEqual(clientDoc.grants, grants)
     })
 
-    it ('creates a client with an already given clientId and secret', function () {
+    it('creates a client with an already given clientId and secret', function () {
       const model = new Model()
       const title = Random.id()
       const clientId = Random.id(16)
@@ -127,7 +127,7 @@ describe('model', function () {
       assert.deepEqual(actualClientDoc, clientDoc)
     })
 
-    it ('returns a client on null secret', function () {
+    it('returns a client on null secret', function () {
       const { clientId } = clientDoc
       const actualClientDoc = Promise.await(model.getClient(clientId, null))
       assert.deepEqual(actualClientDoc, clientDoc)
