@@ -56,7 +56,26 @@ const secureHandler = (self, handler) => bind(function (req, res, next) {
   }
 })
 
+const globalHooks = {}
+globalHooks.user = undefined
+
+const isValidUser = function (user, debug = false) {
+  if (typeof globalHooks.user !== 'function') return true
+  try {
+    return globalHooks.user.call(null, user) !== false
+  } catch (e) {
+    if (debug) {
+      console.info('[OAuth2Server]: globalHooks => isvalidUser failed with exception', e.message, e.reason, e.details)
+    }
+    return false
+  }
+}
+
 export const OAuth2Server = class OAuth2Server {
+  static validateUser (func) {
+    globalHooks.user = func
+  }
+
   constructor ({ serverOptions = {}, model, routes, debug } = {}) {
     check(serverOptions, OAuth2ServerOptionsSchema.serverOptions)
 
@@ -102,7 +121,16 @@ export const OAuth2Server = class OAuth2Server {
    */
   registerClient ({ title, homepage, description, privacyLink, redirectUris, grants, clientId, secret }) {
     const self = this
-    return Promise.await(self.model.createClient({ title, homepage, description, privacyLink, redirectUris, grants, clientId, secret }))
+    return Promise.await(self.model.createClient({
+      title,
+      homepage,
+      description,
+      privacyLink,
+      redirectUris,
+      grants,
+      clientId,
+      secret
+    }))
   }
 
   authorizeHandler (options) {
@@ -295,22 +323,10 @@ export const OAuth2Server = class OAuth2Server {
         'services.resume.loginTokens.hashedToken': Accounts._hashLoginToken(req.body.token)
       })
 
-      if (user) {
-        const id = user._id
-        req.user = { id } // TODO add fields from scope
-
-        if (req.body.allowed === 'false') {
-          Meteor.users.update(id, { $pull: { 'oauth.authorizedClients': client.clientId } })
-        } else {
-          Meteor.users.update(id, { $addToSet: { 'oauth.authorizedClients': client.clientId } })
-        }
-
-        // make this work on a post route
-        req.query.allowed = req.body.allowed
-      } else {
-        // we fail already here if no user has been found
-        // since the oauth-node sever would repsond with a
-        // 503 error, while it should be a 400
+      // we fail already here if no user has been found
+      // since the oauth-node sever would repsond with a
+      // 503 error, while it should be a 400
+      if (!user || !isValidUser({ user, client })) {
         return errorHandler(res, {
           status: 400,
           error: 'access_denied',
@@ -319,6 +335,18 @@ export const OAuth2Server = class OAuth2Server {
           debug: self.debug
         })
       }
+
+      const id = user._id
+      req.user = { id } // TODO add fields from scope
+
+      if (req.body.allowed === 'false') {
+        Meteor.users.update(id, { $pull: { 'oauth.authorizedClients': client.clientId } })
+      } else {
+        Meteor.users.update(id, { $addToSet: { 'oauth.authorizedClients': client.clientId } })
+      }
+
+      // make this work on a post route
+      req.query.allowed = req.body.allowed
 
       return next()
     })
