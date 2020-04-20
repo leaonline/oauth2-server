@@ -153,59 +153,37 @@ describe('model', function () {
   })
 
   describe('saveToken', function () {
-    it('saves an access token', function () {
-      assert.fail()
-    })
-
-    it('optionally saves a refresh token', function () {
-      assert.fail()
-    })
-
-    it('optionally allows to assign extended values', function () {
-      assert.fail()
-    })
+    it('saves an access token')
+    it('optionally saves a refresh token')
+    it('optionally allows to assign extended values')
   })
 
   describe('getAccessToken', function () {
-    it('returns a saved token', function () {
-      assert.fail()
-    })
+    it('returns a saved token')
   })
 
   describe('saveAuthorizationCode', function () {
-    it('is not yet implemented', function () {
-      assert.fail()
-    })
+    it('is not yet implemented')
   })
 
   describe('getAuthorizationCode', function () {
-    it('returns a saved authorization code', function () {
-      assert.fail()
-    })
+    it('returns a saved authorization code')
   })
 
   describe('revokeAuthorizationCode', function () {
-    it('is not yet implemented', function () {
-      assert.fail()
-    })
+    it('is not yet implemented')
   })
 
   describe('saveRefreshToken', function () {
-    it('is not yet implemented', function () {
-      assert.fail()
-    })
+    it('is not yet implemented')
   })
 
   describe('getRefreshToken', function () {
-    it('is not yet implemented', function () {
-      assert.fail()
-    })
+    it('is not yet implemented')
   })
 
   describe('grantTypeAllowed', function () {
-    it('is not yet implemented', function () {
-      assert.fail()
-    })
+    it('is not yet implemented')
   })
 
   /* optional:
