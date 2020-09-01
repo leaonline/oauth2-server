@@ -1,7 +1,7 @@
 /* eslint-env meteor */
 Package.describe({
   name: 'leaonline:oauth2-server',
-  version: '3.2.0',
+  version: '3.2.1',
   summary: 'OAuth 2 Server (v3) with Meteor bindings',
   git: 'https://github.com/leaonline/oauth2-server.git'
 })
@@ -14,7 +14,7 @@ Package.onUse(function (api) {
 })
 
 Npm.depends({
-  'oauth2-server': '3.0.1',
+  'oauth2-server': '3.1.1',
   'body-parser': '1.19.0'
 })
 

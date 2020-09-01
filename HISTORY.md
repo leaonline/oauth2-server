@@ -1,5 +1,9 @@
 # History
 
+## 3.2.1
+
+- bumped `oauth2-server`
+
 ## 3.1.0 - 2019/10/09
 
 - 
