@@ -13,6 +13,8 @@ import { app } from './webapp'
 import { errorHandler } from './error'
 import { isModelInstance } from './utils'
 import { OAuth2ServerDefaults } from './defaults'
+import { Random } from 'meteor/random'
+import { UserValidation } from './userValidation'
 
 const URLSearchParams = require('url').URLSearchParams
 const OAuthserver = Npm.require('oauth2-server')
@@ -56,29 +58,32 @@ const secureHandler = (self, handler) => bind(function (req, res, next) {
   }
 })
 
-const globalHooks = {}
-globalHooks.user = undefined
+const isValidUser = function (instanceId, user, debug = false) {
+  // we assume, that if there is no validation handler registered
+  // then the developers intended to do so. However, we will print an info.
+  if (!UserValidation.isRegistered(instanceId)) {
+    if (debug) {
+      console.info('[OAuth2Server]: skip user validation')
+    }
+    return true
+  }
 
-const isValidUser = function (user, debug = false) {
-  if (typeof globalHooks.user !== 'function') return true
   try {
-    return globalHooks.user.call(null, user) !== false
+    return UserValidation.isValid(instanceId, user)
   } catch (e) {
     if (debug) {
-      console.info('[OAuth2Server]: globalHooks => isvalidUser failed with exception', e.message, e.reason, e.details)
+      console.info('[OAuth2Server]: isValidUser failed with exception', e.message, e.reason, e.details)
     }
+
     return false
   }
 }
 
-export const OAuth2Server = class OAuth2Server {
-  static validateUser (func) {
-    globalHooks.user = func
-  }
-
+class OAuth2Server {
   constructor ({ serverOptions = {}, model, routes, debug } = {}) {
     check(serverOptions, OAuth2ServerOptionsSchema.serverOptions)
 
+    this.instanceId = Random.id()
     this.config = {
       serverOptions: Object.assign({}, OAuth2ServerDefaults.serverOptions, serverOptions),
       routes: Object.assign({}, OAuth2ServerDefaults.routes, routes)
@@ -105,6 +110,11 @@ export const OAuth2Server = class OAuth2Server {
     publishAuhorizedClients(authorizedPubName)
     this.initRoutes(routes)
     return this
+  }
+
+  validateUser (fct) {
+    check(fct, Function)
+    UserValidation.register(this.instanceId, fct)
   }
 
   /**
@@ -326,7 +336,10 @@ export const OAuth2Server = class OAuth2Server {
       // we fail already here if no user has been found
       // since the oauth-node sever would repsond with a
       // 503 error, while it should be a 400
-      if (!user || !isValidUser({ user, client })) {
+      const validateUserCredentials = { user, client }
+      const { instanceId, debug } = self
+
+      if (!user || !isValidUser(instanceId, validateUserCredentials, debug)) {
         return errorHandler(res, {
           status: 400,
           error: 'access_denied',
@@ -436,7 +449,13 @@ export const OAuth2Server = class OAuth2Server {
     })
 
     route('use', fallbackUrl, function (req, res, next) {
-      return errorHandler(res, { error: 'route not found', status: 404, debug: self.debug })
+      return errorHandler(res, {
+        error: 'route not found',
+        status: 404,
+        debug: self.debug
+      })
     })
   }
 }
+
+export { OAuth2Server }
