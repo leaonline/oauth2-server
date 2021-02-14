@@ -27,5 +27,5 @@ UserValidation.isValid = function (instanceId, user) {
     throw new Error(`Expected validation handler for instancId [${instanceId}], got undefined`)
   }
 
-  return validationHandler.call(null, user)
+  return validationHandler(user)
 }
