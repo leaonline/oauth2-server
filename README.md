@@ -79,6 +79,27 @@ oauth2server.app.use('*', function (req, res, next) {
 
 ```
 
+### Additional validation
+
+Often, you want to restrict who of your users can access which client / service.
+In order to decide to give permission or not, you can register a handler that
+receives the authenticated user and the client she aims to access:
+
+```javascript
+oauth2server.validateUser(function({ user, client }) {
+  // the following example uses alanning:roles to check, whether a user
+  // has been assigned a role that indicates she can access the client.
+  // It is up to you how you implement this logic. If all users can access
+  // all registered clients, you can simply omit this call at all.
+  const { clientId } = client
+  const { _id } = user
+  
+  return Roles.userIsInRoles(_id, 'manage-app', clientId)
+})
+```
+
+
+
 ### Client/Popup implementation
 
 You should install a router to handle client side routing indendently from the WebApp routes. You can for example use
