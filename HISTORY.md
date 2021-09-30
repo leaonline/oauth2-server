@@ -1,5 +1,11 @@
 # History
 
+## 3.3.0
+
+- updated `oauth2-server` to `4.0.0-dev.3`
+- removed dependency to `dburles:mongo-collection-instances` (fix dependeny 
+  issues with major accounts packages bumps)
+
 ## 3.2.1
 
 - bumped `oauth2-server`

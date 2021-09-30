@@ -15,13 +15,17 @@ export const isModelInstance = model => {
   return model && Object.keys(model).some(property => modelNames.includes(property))
 }
 
+let cache = new Map()
+
 export const createCollection = (passedCollection, collectionName) => {
-  const existingCollection = Mongo.Collection.get(collectionName)
-  if (existingCollection) {
-    return existingCollection
-  }
   if (passedCollection) {
     return passedCollection
   }
-  return new Mongo.Collection(collectionName)
+
+  if (!cache.has(collectionName)) {
+    const collection = new Mongo.Collection(collectionName)
+    cache.set(collectionName, collection)
+  }
+
+  return cache.get(collectionName)
 }
