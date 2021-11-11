@@ -15,7 +15,7 @@ export const isModelInstance = model => {
   return model && Object.keys(model).some(property => modelNames.includes(property))
 }
 
-let cache = new Map()
+const cache = new Map()
 
 export const createCollection = (passedCollection, collectionName) => {
   if (passedCollection) {
