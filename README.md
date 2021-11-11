@@ -1,10 +1,17 @@
-[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+# Meteor OAuth2 Server
+
+[![Test suite](https://github.com/leaonline/oauth2-server/actions/workflows/tests.yml/badge.svg)](https://github.com/leaonline/oauth2-server/actions/workflows/tests.yml)
+[![CodeQL](https://github.com/leaonline/oauth2-server/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/leaonline/oauth2-server/actions/workflows/codeql-analysis.yml)
+[![built with Meteor](https://img.shields.io/badge/Meteor-package-green?logo=meteor&logoColor=white)](https://atmospherejs.com/leaonline/oauth2-server)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+![GitHub](https://img.shields.io/github/license/leaonline/oauth2-server)
 
-# oauth2-server
-
-This package is a implementation of the package [node-oauth2-server (v3)](https://github.com/thomseddon/node-oauth2-server) for Meteor.
-It runs without `express` and implements the `authorization_code` workflow and works like the Facebook's OAuth popup.
+This package is a implementation of the package
+[@node-oauth/oauth2-server](https://github.com/node-oauth/node-oauth2-server) 
+for Meteor.
+It can run without `express` (we use Meteor's builtin `WebApp`) and implements 
+the `authorization_code` workflow and works like the Facebook's OAuth popup.
 
 ## Changelog
 

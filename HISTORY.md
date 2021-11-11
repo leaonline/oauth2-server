@@ -1,5 +1,9 @@
 # History
 
+## 4.0.0
+- make the OAuth2 server node module and `body-parser` injectable to allow 
+  better dependency management and vulnerability detection on clients
+
 ## 3.3.0
 
 - updated `oauth2-server` to `4.0.0-dev.3`

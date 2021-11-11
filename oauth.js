@@ -17,7 +17,7 @@ import { Random } from 'meteor/random'
 import { UserValidation } from './userValidation'
 
 const URLSearchParams = require('url').URLSearchParams
-const OAuthserver = Npm.require('oauth2-server')
+const OAuthserver = Npm.require('@node-oauth/oauth2-server')
 
 const bind = fn => Meteor.bindEnvironment(fn)
 
