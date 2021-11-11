@@ -20,6 +20,7 @@ Npm.depends({
 Package.onTest(function (api) {
   api.use('ecmascript')
   api.use('mongo')
+  api.use('http')
   api.use('dburles:mongo-collection-instances')
   api.use('meteortesting:mocha')
   api.use('accounts-base')
