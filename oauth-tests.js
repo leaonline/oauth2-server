@@ -210,11 +210,11 @@ describe('integration tests of OAuth2 workflows', function () {
         }
 
         post(routes.authorizeUrl, { params }, done, res => {
-          assert.equal(res.statusCode, 302)
           const queryParamsRegex = new RegExp(`code=.+&user=${user._id}&state=${params.state}`, 'g')
           const location = res.headers.location.split('?')
           assert.equal(location[0], clientDoc.redirectUris[0])
           assert.isTrue(queryParamsRegex.test(location[1]))
+          assert.equal(res.statusCode, 302)
         })
       })
 

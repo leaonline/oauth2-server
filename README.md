@@ -210,6 +210,12 @@ We use mocha with `meteortesting:mocha` to run the tests. You can run the tests 
 TEST_WATCH=1 TEST_CLIENT=0 meteor test-packages ./ --driver-package meteortesting:mocha
 ```
 
+You can also run the tests once via
+
+```bash
+TEST_CLIENT=0 meteor test-packages ./ --once --driver-package meteortesting:mocha
+```
+
 
 ## License
 
