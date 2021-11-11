@@ -1,0 +1,56 @@
+name: Test suite
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
+
+jobs:
+  lintcode:
+    name: Javascript lint
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+
+    - name: setup node
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.x'
+
+    - name: cache dependencies
+      uses: actions/cache@v1
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    - run: npm install -g standard
+    - run: npx standard .
+
+
+  tests:
+    name: Meteor ${{ matrix.meteor }} tests
+    runs-on: ubuntu-latest
+    needs: [lintcode]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: Setup meteor
+        uses: meteorengineer/setup-meteor@v1
+        with:
+          meteor-release: '2.3'
+
+      - name: cache dependencies
+        uses: actions/cache@v1
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - run: TEST_CLIENT=0 meteor test-packages ./ --once --driver-package meteortesting:mocha
