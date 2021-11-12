@@ -1,5 +1,13 @@
 # History
 
+## 4.0.0
+- use (actively maintained) @node-oauth/oauth2-server
+- improve console output readability
+- support Meteor versions `['1.6', '2.3']`; because 2.3 was a breaking release
+- update tests to use latest Accounts and jkuester:http
+- update follow redirect rules
+- maybe-breaking due to update to Accounts 2.x
+
 ## 3.3.0
 
 - updated `oauth2-server` to `4.0.0-dev.3`

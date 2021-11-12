@@ -17,7 +17,7 @@ import { Random } from 'meteor/random'
 import { UserValidation } from './userValidation'
 
 const URLSearchParams = require('url').URLSearchParams
-const OAuthserver = Npm.require('oauth2-server')
+const OAuthserver = Npm.require('@node-oauth/oauth2-server')
 
 const bind = fn => Meteor.bindEnvironment(fn)
 
@@ -27,7 +27,7 @@ const { Response } = OAuthserver
 const getDebugMiddleWare = instance => (req, res, next) => {
   if (instance.debug === true) {
     const baseUrl = req.originalUrl.split('?')[0]
-    console.log('[OAuth2Server]', req.method, baseUrl, req.query || req.body)
+    console.debug('[OAuth2Server]', req.method, baseUrl, req.query || req.body)
   }
   return next()
 }
@@ -63,7 +63,7 @@ const isValidUser = function (instanceId, user, debug = false) {
   // then the developers intended to do so. However, we will print an info.
   if (!UserValidation.isRegistered(instanceId)) {
     if (debug) {
-      console.info('[OAuth2Server]: skip user validation')
+      console.debug('[OAuth2Server]: skip user validation')
     }
     return true
   }
@@ -72,7 +72,7 @@ const isValidUser = function (instanceId, user, debug = false) {
     return UserValidation.isValid(instanceId, user)
   } catch (e) {
     if (debug) {
-      console.info('[OAuth2Server]: isValidUser failed with exception', e.message, e.reason, e.details)
+      console.debug('[OAuth2Server]: isValidUser failed with exception', e.message, e.reason, e.details)
     }
 
     return false
@@ -369,7 +369,7 @@ class OAuth2Server {
     // - on allow, assign the client_id to the user's authorized clients
     // - on deny, ...?
     // - construct the redirect query and redirect to the redirect_uri
-    route('post', authorizeUrl, function (req, res, next) {
+    route('post', authorizeUrl, function (req, res /*, next */) {
       const request = new Request(req)
       const response = new Response(res)
       const authorizeOptions = {
@@ -387,8 +387,11 @@ class OAuth2Server {
             user: req.user.id,
             state: req.body.state
           })
+
           const finalRedirectUri = `${req.body.redirect_uri}?${query}`
-          res.writeHead(302, { Location: finalRedirectUri })
+
+          res.statusCode = 302
+          res.setHeader('Location', finalRedirectUri)
           res.end()
         }))
         .catch(function (err) {
@@ -437,7 +440,6 @@ class OAuth2Server {
           res.end(body)
         })
         .catch(function (err) {
-          console.error(err)
           return errorHandler(res, {
             error: 'unauthorized_client',
             description: err.message,

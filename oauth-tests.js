@@ -4,7 +4,7 @@ import { Mongo } from 'meteor/mongo'
 import { assert } from 'meteor/practicalmeteor:chai'
 import { Random } from 'meteor/random'
 import { Accounts } from 'meteor/accounts-base'
-import { HTTP } from 'meteor/http'
+import { HTTP } from 'meteor/jkuester:http'
 import { OAuth2Server } from './oauth'
 import { OAuth2ServerDefaults } from './defaults'
 import { DefaultModelConfig, Model } from './model'
@@ -73,13 +73,14 @@ describe('integration tests of OAuth2 workflows', function () {
       fallbackUrl: `/${Random.id()}`
     }
 
-    const debug = true
+    const debug = false
+    const logErrors = false
     const authCodeServer = new OAuth2Server({ debug, model: { debug }, routes })
 
     const get = (url, params, done, cb) => {
       const fullUrl = Meteor.absoluteUrl(url)
       HTTP.get(fullUrl, params, (err, res) => {
-        if (err) console.error(err)
+        if (err && logErrors) console.error(err)
         try {
           cb(res)
           done()
@@ -92,7 +93,7 @@ describe('integration tests of OAuth2 workflows', function () {
     const post = (url, params, done, cb) => {
       const fullUrl = Meteor.absoluteUrl(url)
       HTTP.post(fullUrl, params, (err, res) => {
-        if (err) console.error(err)
+        if (err && logErrors) console.error(err)
         try {
           cb(res)
           done()
@@ -199,22 +200,35 @@ describe('integration tests of OAuth2 workflows', function () {
     })
 
     describe('Authorization Response', function () {
-      it('issues an authorization code and delivers it to the client via redirect', function (done) {
-        const params = {
-          client_id: clientDoc.clientId,
-          response_type: 'code',
-          redirect_uri: clientDoc.redirectUris[0],
-          state: Random.id(),
-          token: user.token,
-          allowed: undefined
-        }
+      [true, false].forEach(followRedirects => {
+        it(`issues an authorization code and delivers it to the client via redirect follow=${followRedirects}`, function (done) {
+          const params = {
+            client_id: clientDoc.clientId,
+            response_type: 'code',
+            redirect_uri: clientDoc.redirectUris[0],
+            state: Random.id(),
+            token: user.token,
+            allowed: undefined
+          }
 
-        post(routes.authorizeUrl, { params }, done, res => {
-          assert.equal(res.statusCode, 302)
-          const queryParamsRegex = new RegExp(`code=.+&user=${user._id}&state=${params.state}`, 'g')
-          const location = res.headers.location.split('?')
-          assert.equal(location[0], clientDoc.redirectUris[0])
-          assert.isTrue(queryParamsRegex.test(location[1]))
+          // depending on our fetch options we either immediately follow the
+          // redirect and expect a 200 repsonse or, if we don't follow,
+          // we expect a 302 response with location header, which can be used
+          // by the client to manually follow
+          post(routes.authorizeUrl, { params, followRedirects }, done, res => {
+            if (followRedirects) {
+              assert.equal(res.statusCode, 200)
+              assert.equal(res.headers.location, undefined)
+            } else {
+              assert.equal(res.statusCode, 302)
+
+              const location = res.headers.location.split('?')
+              assert.equal(location[0], clientDoc.redirectUris[0])
+
+              const queryParamsRegex = new RegExp(`code=.+&user=${user._id}&state=${params.state}`, 'g')
+              assert.isTrue(queryParamsRegex.test(location[1]))
+            }
+          })
         })
       })
 
@@ -356,7 +370,6 @@ describe('integration tests of OAuth2 workflows', function () {
           assert.equal(res.statusCode, 200)
 
           const headers = res.headers
-          console.log(headers)
           assert.equal(headers['content-type'], 'application/json')
           assert.equal(headers['cache-control'], 'no-store')
           assert.equal(headers.pragma, 'no-cache')
