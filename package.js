@@ -23,8 +23,8 @@ Package.onTest(function (api) {
   api.use('jkuester:http@2.1.0')
   api.use('dburles:mongo-collection-instances')
   api.use('meteortesting:mocha')
-  api.use('accounts-base@2.1.0')
-  api.use('accounts-password@2.1.0')
+  api.use('accounts-base@2.0.0')
+  api.use('accounts-password@2.0.0')
   api.use('practicalmeteor:chai')
   //  api.mainModule('oauth-tests.js', 'server')
 
