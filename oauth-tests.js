@@ -4,7 +4,7 @@ import { Mongo } from 'meteor/mongo'
 import { assert } from 'meteor/practicalmeteor:chai'
 import { Random } from 'meteor/random'
 import { Accounts } from 'meteor/accounts-base'
-import { HTTP } from 'meteor/http'
+import { HTTP } from 'meteor/jkuester:http'
 import { OAuth2Server } from './oauth'
 import { OAuth2ServerDefaults } from './defaults'
 import { DefaultModelConfig, Model } from './model'
@@ -73,13 +73,14 @@ describe('integration tests of OAuth2 workflows', function () {
       fallbackUrl: `/${Random.id()}`
     }
 
-    const debug = true
+    const debug = false
+    const logErrors = false
     const authCodeServer = new OAuth2Server({ debug, model: { debug }, routes })
 
     const get = (url, params, done, cb) => {
       const fullUrl = Meteor.absoluteUrl(url)
       HTTP.get(fullUrl, params, (err, res) => {
-        if (err) console.error(err)
+        if (err && logErrors) console.error(err)
         try {
           cb(res)
           done()
@@ -92,7 +93,7 @@ describe('integration tests of OAuth2 workflows', function () {
     const post = (url, params, done, cb) => {
       const fullUrl = Meteor.absoluteUrl(url)
       HTTP.post(fullUrl, params, (err, res) => {
-        if (err) console.error(err)
+        if (err && logErrors) console.error(err)
         try {
           cb(res)
           done()
@@ -210,11 +211,12 @@ describe('integration tests of OAuth2 workflows', function () {
         }
 
         post(routes.authorizeUrl, { params }, done, res => {
+          assert.equal(res.statusCode, 302)
           const queryParamsRegex = new RegExp(`code=.+&user=${user._id}&state=${params.state}`, 'g')
+          assert.isTrue(queryParamsRegex.test(location[1]))
+
           const location = res.headers.location.split('?')
           assert.equal(location[0], clientDoc.redirectUris[0])
-          assert.isTrue(queryParamsRegex.test(location[1]))
-          assert.equal(res.statusCode, 302)
         })
       })
 
@@ -356,7 +358,6 @@ describe('integration tests of OAuth2 workflows', function () {
           assert.equal(res.statusCode, 200)
 
           const headers = res.headers
-          console.log(headers)
           assert.equal(headers['content-type'], 'application/json')
           assert.equal(headers['cache-control'], 'no-store')
           assert.equal(headers.pragma, 'no-cache')
