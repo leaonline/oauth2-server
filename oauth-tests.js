@@ -200,23 +200,35 @@ describe('integration tests of OAuth2 workflows', function () {
     })
 
     describe('Authorization Response', function () {
-      it('issues an authorization code and delivers it to the client via redirect', function (done) {
-        const params = {
-          client_id: clientDoc.clientId,
-          response_type: 'code',
-          redirect_uri: clientDoc.redirectUris[0],
-          state: Random.id(),
-          token: user.token,
-          allowed: undefined
-        }
+      [true, false].forEach(followRedirects => {
+        it(`issues an authorization code and delivers it to the client via redirect follow=${followRedirects}`, function (done) {
+          const params = {
+            client_id: clientDoc.clientId,
+            response_type: 'code',
+            redirect_uri: clientDoc.redirectUris[0],
+            state: Random.id(),
+            token: user.token,
+            allowed: undefined
+          }
 
-        post(routes.authorizeUrl, { params }, done, res => {
-          assert.equal(res.statusCode, 302)
-          const queryParamsRegex = new RegExp(`code=.+&user=${user._id}&state=${params.state}`, 'g')
-          assert.isTrue(queryParamsRegex.test(location[1]))
+          // depending on our fetch options we either immediately follow the
+          // redirect and expect a 200 repsonse or, if we don't follow,
+          // we expect a 302 response with location header, which can be used
+          // by the client to manually follow
+          post(routes.authorizeUrl, { params, followRedirects }, done, res => {
+            if (followRedirects) {
+              assert.equal(res.statusCode, 200)
+              assert.equal(res.headers.location, undefined)
+            } else {
+              assert.equal(res.statusCode, 302)
 
-          const location = res.headers.location.split('?')
-          assert.equal(location[0], clientDoc.redirectUris[0])
+              const location = res.headers.location.split('?')
+              assert.equal(location[0], clientDoc.redirectUris[0])
+
+              const queryParamsRegex = new RegExp(`code=.+&user=${user._id}&state=${params.state}`, 'g')
+              assert.isTrue(queryParamsRegex.test(location[1]))
+            }
+          })
         })
       })
 

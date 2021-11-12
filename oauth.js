@@ -369,7 +369,7 @@ class OAuth2Server {
     // - on allow, assign the client_id to the user's authorized clients
     // - on deny, ...?
     // - construct the redirect query and redirect to the redirect_uri
-    route('post', authorizeUrl, function (req, res, next) {
+    route('post', authorizeUrl, function (req, res /*, next */) {
       const request = new Request(req)
       const response = new Response(res)
       const authorizeOptions = {
@@ -387,8 +387,11 @@ class OAuth2Server {
             user: req.user.id,
             state: req.body.state
           })
+
           const finalRedirectUri = `${req.body.redirect_uri}?${query}`
-          res.writeHead(302, { Location: finalRedirectUri })
+
+          res.statusCode = 302
+          res.setHeader('Location', finalRedirectUri)
           res.end()
         }))
         .catch(function (err) {
