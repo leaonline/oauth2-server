@@ -20,11 +20,11 @@ Npm.depends({
 Package.onTest(function (api) {
   api.use('ecmascript')
   api.use('mongo')
-  api.use('http@1.4.0')
+  api.use('jkuester:http@2.1.0')
   api.use('dburles:mongo-collection-instances')
   api.use('meteortesting:mocha')
-  api.use('accounts-base')
-  api.use('accounts-password')
+  api.use('accounts-base@2.1.0')
+  api.use('accounts-password@2.1.0')
   api.use('practicalmeteor:chai')
   //  api.mainModule('oauth-tests.js', 'server')
 
