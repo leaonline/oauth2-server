@@ -1,7 +1,7 @@
 /* eslint-env mocha */
 import { Random } from 'meteor/random'
 import { assert } from 'meteor/practicalmeteor:chai'
-import { errorHandler } from './error'
+import { errorHandler } from '../lib/error'
 
 class Res {
   writeHead (httpStatus, options) {

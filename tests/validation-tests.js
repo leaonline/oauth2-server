@@ -1,6 +1,6 @@
 /* eslint-env mocha */
 import { assert } from 'meteor/practicalmeteor:chai'
-import { validate } from './validation'
+import { validate } from '../lib/validation'
 
 describe('validation', function () {
   describe('validate', function () {

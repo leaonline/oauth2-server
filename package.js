@@ -9,7 +9,7 @@ Package.describe({
 Package.onUse(function (api) {
   api.versionsFrom(['1.6', '2.3'])
   api.use('ecmascript@0.12.7')
-  api.mainModule('oauth.js', 'server')
+  api.mainModule('lib/oauth.js', 'server')
 })
 
 Npm.depends({
@@ -18,21 +18,26 @@ Npm.depends({
 })
 
 Package.onTest(function (api) {
+  api.use([
+    'lmieulet:meteor-legacy-coverage',
+    'lmieulet:meteor-coverage@4.1.0',
+    'lmieulet:meteor-packages-coverage',
+    'meteortesting:mocha'
+  ])
   api.use('ecmascript')
   api.use('mongo')
   api.use('jkuester:http@2.1.0')
   api.use('dburles:mongo-collection-instances')
-  api.use('meteortesting:mocha')
   api.use('accounts-base@2.0.0')
   api.use('accounts-password@2.0.0')
   api.use('practicalmeteor:chai')
   //  api.mainModule('oauth-tests.js', 'server')
 
   api.addFiles([
-    'error-tests.js',
-    'validation-tests.js',
-    'model-tests.js',
-    'webapp-tests.js',
-    'oauth-tests.js'
+    'tests/error-tests.js',
+    'tests/validation-tests.js',
+    'tests/model-tests.js',
+    'tests/webapp-tests.js',
+    'tests/oauth-tests.js'
   ], 'server')
 })

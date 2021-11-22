@@ -5,9 +5,10 @@ import { assert } from 'meteor/practicalmeteor:chai'
 import { Random } from 'meteor/random'
 import { Accounts } from 'meteor/accounts-base'
 import { HTTP } from 'meteor/jkuester:http'
-import { OAuth2Server } from './oauth'
-import { OAuth2ServerDefaults } from './defaults'
-import { DefaultModelConfig, Model } from './model'
+import { OAuth2Server } from '../lib/oauth'
+import { OAuth2ServerDefaults } from '../lib/defaults'
+import { OAuthMeteorModel } from '../lib/model/model'
+import { DefaultModelConfig } from '../lib/model/DefaultModelConfig'
 import { assertCollection } from './test-helpers.tests'
 
 describe('constructor', function () {
@@ -18,7 +19,7 @@ describe('constructor', function () {
     assert.deepEqual(server.config.model, OAuth2ServerDefaults.model)
     assert.deepEqual(server.config.routes, OAuth2ServerDefaults.routes)
 
-    const model = new Model()
+    const model = new OAuthMeteorModel()
     assert.deepEqual(server.model, model)
   })
 
@@ -52,6 +53,7 @@ describe('constructor', function () {
     }
     const server = new OAuth2Server({ model })
     assert.isDefined(server)
+    console.debug(server.model)
     assert.deepEqual(server.model, model)
   })
 

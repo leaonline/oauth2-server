@@ -3,7 +3,8 @@ import { Meteor } from 'meteor/meteor'
 import { Mongo } from 'meteor/mongo'
 import { Random } from 'meteor/random'
 import { assert } from 'meteor/practicalmeteor:chai'
-import { Model, DefaultModelConfig } from './model'
+import { OAuthMeteorModel } from '../lib/model/model'
+import { DefaultModelConfig } from '../lib/model/DefaultModelConfig'
 
 const GrantTypes = {
   authorization_code: 'authorization_code',
@@ -34,7 +35,7 @@ describe('model', function () {
 
   describe('constructor', function () {
     it('can be created with defaults', function () {
-      assert.isDefined(new Model())
+      assert.isDefined(new OAuthMeteorModel())
       assertCollection(DefaultModelConfig.accessTokensCollectionName)
       assertCollection(DefaultModelConfig.refreshTokensCollectionName)
       assertCollection(DefaultModelConfig.authCodesCollectionName)
@@ -42,7 +43,7 @@ describe('model', function () {
     })
 
     it('can be created with custom collection names', function () {
-      assert.isDefined(new Model({
+      assert.isDefined(new OAuthMeteorModel({
         accessTokensCollectionName: randomAccessTokenName,
         refreshTokensCollectionName: randomRefreshTokenName,
         authCodesCollectionName: randomAuthCodeName,
@@ -59,7 +60,7 @@ describe('model', function () {
       const RefreshTokens = new Mongo.Collection(randomRefreshTokenName)
       const AuthCodes = new Mongo.Collection(randomAuthCodeName)
       const Clients = new Mongo.Collection(randomClientsName)
-      assert.isDefined(new Model({
+      assert.isDefined(new OAuthMeteorModel({
         accessTokensCollection: AccessTokens,
         refreshTokensCollection: RefreshTokens,
         authCodesCollection: AuthCodes,
@@ -74,7 +75,7 @@ describe('model', function () {
 
   describe('createClient', function () {
     it('creates a client with minimum required credentials', function () {
-      const model = new Model()
+      const model = new OAuthMeteorModel()
       const title = Random.id()
       const redirectUris = [Meteor.absoluteUrl(`/${Random.id()}`)]
       const grants = [GrantTypes.authorization_code]
@@ -90,7 +91,7 @@ describe('model', function () {
     })
 
     it('creates a client with an already given clientId and secret', function () {
-      const model = new Model()
+      const model = new OAuthMeteorModel()
       const title = Random.id()
       const clientId = Random.id(16)
       const secret = Random.id(32)
@@ -113,7 +114,7 @@ describe('model', function () {
     let clientDoc
 
     beforeEach(function () {
-      model = new Model()
+      model = new OAuthMeteorModel()
       const title = Random.id()
       const redirectUris = [Meteor.absoluteUrl(`/${Random.id()}`)]
       const grants = [GrantTypes.authorization_code]
