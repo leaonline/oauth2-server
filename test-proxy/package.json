@@ -6,6 +6,7 @@
     "setup": "mkdir -p packages && ln -sfn ../../ ./packages/oauth2-server",
     "lint": "npm run setup && standardx -v .. | snazzy",
     "lint:fix": "npm run setup && standardx -v --fix .. | snazzy",
+    "build:docs": "jsdoc2md '../!(node_modules|coverage|test-proxy)/**/*.js' > ../API.md",
     "test": "METEOR_PACKAGE_DIRS='../' TEST_CLIENT=0 meteor test-packages --once --raw-logs --driver-package meteortesting:mocha ../",
     "test:watch": "METEOR_PACKAGE_DIRS='../' TEST_CLIENT=0 TEST_WATCH=1 meteor test-packages --raw-logs --driver-package meteortesting:mocha ../",
     "test:coverage": "BABEL_ENV=COVERAGE TEST_CLIENT=0 TEST_WATCH=1 COVERAGE=1 COVERAGE_OUT_HTML=1 COVERAGE_APP_FOLDER=$(pwd)/ meteor test-packages --driver-package meteortesting:mocha ./packages/oauth2-server"
@@ -19,6 +20,7 @@
     "@babel/eslint-parser": "^7.16.3",
     "babel-plugin-istanbul": "^6.1.1",
     "chai": "^4.3.4",
+    "jsdoc": "^3.6.10",
     "jsdoc-to-markdown": "^7.1.0",
     "puppeteer": "^11.0.0",
     "sinon": "^12.0.1",

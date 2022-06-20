@@ -35,8 +35,8 @@ describe('validation', function () {
     })
     describe(UserValidation.register.name, function () {
       it('throws if key is not an instance with instanceId', function () {
-        expect(() => UserValidation.register()).to.throw('Match error: Expected object, got undefined')
-        expect(() => UserValidation.register({})).to.throw('Match error: Missing key \'instanceId\'')
+        expect(() => UserValidation.register()).to.throw('Match error: Expected string, got undefined in field instanceId')
+        expect(() => UserValidation.register({})).to.throw('Match error: Expected string, got undefined in field instanceId')
       })
       it('throws if fct ist not a function', function () {
         expect(() => UserValidation.register({ instanceId })).to.throw('Match error: Expected function, got undefined')
