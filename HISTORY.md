@@ -1,5 +1,21 @@
 # History
 
+## 4.2.0
+- updated `@node-oauth/oauth2-server` to `4.2.0`
+- correctly setup coverage for test project and package
+- added documentation and generate docs via jsdoc2md (see [API.md](./API.md))
+- fix(core): extracted initRoutes from OAuth2Server into standalone function to
+  prevent re-init
+
+## 4.1.0
+- this version has not been released publicly and superseded by `4.2.0`
+- removed `redirectUris` to find client (now searches only by clientId) in
+  `createClient`
+- hardened check failsafety in `UserValidation`
+- hardened check against empty Strings in `requiredAccessTokenPostParams`,
+  `requiredAuthorizeGetParams` and `requiredAuthorizePostParams`
+- updated `@node-oauth/oauth2-server` to `4.1.1`
+
 ## 4.0.0
 - use (actively maintained) @node-oauth/oauth2-server
 - improve console output readability
