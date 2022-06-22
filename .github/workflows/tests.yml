@@ -56,5 +56,6 @@ jobs:
         run: |
           cd test-proxy
           meteor npm install
+          meteor npm run setup
           meteor npm run lint
           meteor npm run test
