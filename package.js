@@ -1,8 +1,8 @@
 /* eslint-env meteor */
 Package.describe({
   name: 'leaonline:oauth2-server',
-  version: '4.0.0',
-  summary: 'OAuth 2 Server (v3) with Meteor bindings',
+  version: '4.2.0',
+  summary: 'Node OAuth2 Server (v4) with Meteor bindings',
   git: 'https://github.com/leaonline/oauth2-server.git'
 })
 
@@ -13,16 +13,16 @@ Package.onUse(function (api) {
 })
 
 Npm.depends({
-  '@node-oauth/oauth2-server': '4.1.0',
-  'body-parser': '1.19.0'
+  '@node-oauth/oauth2-server': '4.2.0',
+  'body-parser': '1.20.0'
 })
 
 Package.onTest(function (api) {
   api.use([
     'lmieulet:meteor-legacy-coverage',
-    'lmieulet:meteor-coverage@4.1.0',
+    'lmieulet:meteor-coverage@3.2.0',
     'lmieulet:meteor-packages-coverage',
-    'meteortesting:mocha'
+    'meteortesting:mocha@2.0.0'
   ])
   api.use('ecmascript')
   api.use('mongo')
