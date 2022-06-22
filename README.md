@@ -219,9 +219,15 @@ Template.authorize.onRendered(function() {
 }
 ```
 
-## API
+## API and Documentation
 
-We also have an [API documentation](./API.md) with further info.
+We also have an [API documentation](./API.md) with further info on the 
+package internals.
+
+Furthermore we suggest you to consult the RFC docs on OAuth2:
+
+- [RFC 6749 -  The OAuth 2.0 Authorization Framework](https://datatracker.ietf.org/doc/html/rfc6749.html)
+- [RFC 6750 - The OAuth 2.0 Authorization Framework: Bearer Token Usage](https://datatracker.ietf.org/doc/html/rfc6750.html)
 
 ## Testing
 
