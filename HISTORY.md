@@ -1,5 +1,24 @@
 # History
 
+## 4.2.1
+- this is a patch release, fixing a syntax error 
+  (that never got picked up, due to wrong linter config)
+  
+### Code fixes
+
+- fix(core): standard lint fixed
+- fix(core): oauth.js fix wrong syntax error in import
+  
+### Dev fixes
+  
+- fix(ci): run npm setup before lint and test to link package
+- fix(build): remove .coverage from git 
+  (URLSearchParam missing s at the end)
+- fix(tests): test project linter settings fixed
+- fix(ci): remove dependencies from single job
+- update(ci): test workflow update to use test project
+
+
 ## 4.2.0
 - updated `@node-oauth/oauth2-server` to `4.2.0`
 - correctly setup coverage for test project and package

@@ -23,7 +23,8 @@ describe('webapp', function () {
       try {
         assert.equal(req.query.test, test)
         finish(res, done)
-      } catch (e) {
+      }
+      catch (e) {
         finish(res, done, e)
       }
     })
@@ -60,7 +61,8 @@ describe('webapp', function () {
       try {
         assert.equal(req.body.test, test)
         finish(res, done)
-      } catch (e) {
+      }
+      catch (e) {
         finish(res, done, e)
       }
     })
@@ -78,7 +80,8 @@ describe('webapp', function () {
       try {
         assert.equal(req.headers['content-type'], 'application/x-www-form-urlencoded')
         finish(res, done)
-      } catch (e) {
+      }
+      catch (e) {
         finish(res, done, e)
       }
     })
@@ -114,7 +117,8 @@ describe('webapp', function () {
     app.use(`/${route}`, function (req, res, next) {
       if (checkDone(req.method.toLowerCase())) {
         return finish(res, done)
-      } else {
+      }
+      else {
         return next()
       }
     })

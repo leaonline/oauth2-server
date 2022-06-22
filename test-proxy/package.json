@@ -4,8 +4,8 @@
   "scripts": {
     "start": "meteor run",
     "setup": "mkdir -p packages && ln -sfn ../../ ./packages/oauth2-server",
-    "lint": "npm run setup && standardx -v .. | snazzy",
-    "lint:fix": "npm run setup && standardx -v --fix .. | snazzy",
+    "lint": "standardx -v ./packages/oauth2-server | snazzy",
+    "lint:fix": "standardx -v --fix ./packages/oauth2-server | snazzy",
     "build:docs": "jsdoc2md '../!(node_modules|coverage|test-proxy)/**/*.js' > ../API.md",
     "test": "METEOR_PACKAGE_DIRS='../' TEST_CLIENT=0 meteor test-packages --once --raw-logs --driver-package meteortesting:mocha ../",
     "test:watch": "METEOR_PACKAGE_DIRS='../' TEST_CLIENT=0 TEST_WATCH=1 meteor test-packages --raw-logs --driver-package meteortesting:mocha ../",
@@ -13,15 +13,16 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.15.4",
-    "meteor-node-stubs": "^1.1.0"
+    "meteor-node-stubs": "^1.2.3"
   },
   "devDependencies": {
-    "@babel/core": "^7.16.0",
-    "@babel/eslint-parser": "^7.16.3",
+    "@babel/core": "^7.18.5",
+    "@babel/eslint-parser": "^7.18.2",
     "babel-plugin-istanbul": "^6.1.1",
-    "chai": "^4.3.4",
+    "chai": "^4.3.6",
+    "eslint-plugin-security": "^1.5.0",
     "jsdoc": "^3.6.10",
-    "jsdoc-to-markdown": "^7.1.0",
+    "jsdoc-to-markdown": "^7.1.1",
     "puppeteer": "^11.0.0",
     "sinon": "^12.0.1",
     "snazzy": "^9.0.0",
@@ -45,7 +46,7 @@
     "parser": "@babel/eslint-parser",
     "parserOptions": {
       "sourceType": "module",
-      "allowImportExportEverywhere": false
+      "allowImportExportEverywhere": true
     },
     "rules": {
       "brace-style": [
