@@ -11,7 +11,7 @@ This package is a implementation of the package
 [@node-oauth/oauth2-server](https://github.com/node-oauth/node-oauth2-server) 
 for Meteor.
 It can run without `express` (we use Meteor's builtin `WebApp`) and implements 
-the `authorization_code` workflow and works like the Facebook's OAuth popup.
+the `authorization_code` and `refresh_token` workflow and works like the Facebook's OAuth popup.
 
 ## Changelog
 
@@ -58,7 +58,6 @@ const oauth2server = new OAuth2Server({
   },
   model: {
     accessTokensCollectionName: 'oauth_access_tokens',
-    refreshTokensCollectionName: 'oauth_refresh_tokens',
     clientsCollectionName: 'oauth_clients',
     authCodesCollectionName: 'oauth_auth_codes',
     debug: true
