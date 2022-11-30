@@ -13,44 +13,44 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # CACHING
       - name: Install Meteor
         id: cache-meteor-install
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.meteor
-          key: v1-meteor-${{ hashFiles('.meteor/versions') }}
+          key: v3-meteor-${{ hashFiles('.meteor/versions') }}
           restore-keys: |
-                v1-meteor-
+                v3-meteor-
 
       - name: Cache NPM dependencies
         id: cache-meteor-npm
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.npm
-          key: v1-npm-${{ hashFiles('package-lock.json') }}
+          key: v3-npm-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-                v1-npm-
+                v3-npm-
 
       - name: Cache Meteor build
         id: cache-meteor-build
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             .meteor/local/resolver-result-cache.json
             .meteor/local/plugin-cache
             .meteor/local/isopacks
             .meteor/local/bundler-cache/scanner
-          key: v1-meteor_build_cache-${{ github.ref }}-${{ github.sha }}
+          key: v3-meteor_build_cache-${{ github.ref }}-${{ github.sha }}
           restore-key: |
-            v1-meteor_build_cache-
+            v3-meteor_build_cache-
 
       - name: Setup meteor
         uses: meteorengineer/setup-meteor@v1
         with:
-          meteor-release: '2.5.1'
+          meteor-release: '2.8.1'
 
       - name: Run lint and tests
         run: |
