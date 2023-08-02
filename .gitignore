@@ -1,10 +1,7 @@
 # folders
-node_modules/
 packages/
 
-# ide specific
-.idea
-.vscode
+
 
 # config files
 productionSettings.json
@@ -135,4 +132,3 @@ SemikolonPlus*
 # meteor package specific
 .meteor/local
 .meteor/meteorite
-.npm
