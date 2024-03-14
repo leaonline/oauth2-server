@@ -6,7 +6,7 @@
     "setup": "mkdir -p packages && ln -sfn ../../ ./packages/oauth2-server",
     "lint": "standardx -v ./packages/oauth2-server | snazzy",
     "lint:fix": "standardx -v --fix ./packages/oauth2-server | snazzy",
-    "build:docs": "jsdoc2md '../!(node_modules|coverage|test-proxy)/**/*.js' > ../API.md",
+    "build:docs": "jsdoc2md '../!(node_modules|coverage|tests|test-proxy)/**/*.js' > ../API.md",
     "test": "METEOR_PACKAGE_DIRS='../' TEST_CLIENT=0 meteor test-packages --once --raw-logs --driver-package meteortesting:mocha ../",
     "test:watch": "METEOR_PACKAGE_DIRS='../' TEST_CLIENT=0 TEST_WATCH=1 meteor test-packages --raw-logs --driver-package meteortesting:mocha ../",
     "test:coverage": "BABEL_ENV=COVERAGE TEST_CLIENT=0 TEST_WATCH=1 COVERAGE=1 COVERAGE_OUT_HTML=1 COVERAGE_APP_FOLDER=$(pwd)/ meteor test-packages --driver-package meteortesting:mocha ./packages/oauth2-server"
