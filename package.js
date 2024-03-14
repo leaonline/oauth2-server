@@ -13,7 +13,7 @@ Package.onUse(function (api) {
 })
 
 Npm.depends({
-  '@node-oauth/oauth2-server': '5.0.0-rc.1',
+  '@node-oauth/oauth2-server': '5.0.0',
   'body-parser': '1.20.0'
 })
 
