@@ -86,8 +86,7 @@ describe('integration tests of OAuth2 workflows', function () {
         try {
           cb(res)
           done()
-        }
-        catch (e) {
+        } catch (e) {
           done(e)
         }
       })
@@ -100,8 +99,7 @@ describe('integration tests of OAuth2 workflows', function () {
         try {
           cb(res)
           done()
-        }
-        catch (e) {
+        } catch (e) {
           done(e)
         }
       })
@@ -223,8 +221,7 @@ describe('integration tests of OAuth2 workflows', function () {
             if (followRedirects) {
               assert.equal(res.statusCode, 200)
               assert.equal(res.headers.location, undefined)
-            }
-            else {
+            } else {
               assert.equal(res.statusCode, 302)
 
               const location = res.headers.location.split('?')
