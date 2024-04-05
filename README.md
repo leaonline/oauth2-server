@@ -6,6 +6,8 @@
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 ![GitHub](https://img.shields.io/github/license/leaonline/oauth2-server)
+[![DOI](https://zenodo.org/badge/202368067.svg)](https://zenodo.org/doi/10.5281/zenodo.10817036)
+
 
 This package is a implementation of the package
 [@node-oauth/oauth2-server](https://github.com/node-oauth/node-oauth2-server) 
