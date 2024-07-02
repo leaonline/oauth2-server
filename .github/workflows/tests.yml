@@ -8,17 +8,43 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    name: StandardJS lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Cache NPM dependencies
+        id: cache-meteor-npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: v3-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            v3-npm-
+
+      - name: Run lint
+        run: |
+          cd test-proxy
+          npm install
+          npm run setup
+          npm run test
+
   tests:
     name: Meteor tests
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # CACHING
       - name: Install Meteor
         id: cache-meteor-install
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.meteor
           key: v3-meteor-${{ hashFiles('.meteor/versions') }}
@@ -52,10 +78,9 @@ jobs:
         with:
           meteor-release: '2.8.1'
 
-      - name: Run lint and tests
+      - name: Run tests
         run: |
           cd test-proxy
           meteor npm install
           meteor npm run setup
-          meteor npm run lint
           meteor npm run test
