@@ -2,7 +2,7 @@
 import { Meteor } from 'meteor/meteor'
 import { Mongo } from 'meteor/mongo'
 import { Random } from 'meteor/random'
-import { assert } from 'meteor/practicalmeteor:chai'
+import { assert, expect } from 'chai'
 import { OAuthMeteorModel } from '../lib/model/model'
 import { DefaultModelConfig } from '../lib/model/DefaultModelConfig'
 
@@ -31,6 +31,13 @@ describe('model', function () {
     randomRefreshTokenName = Random.id()
     randomAuthCodeName = Random.id()
     randomClientsName = Random.id()
+  })
+
+  afterEach(function () {
+    Mongo.Collection.get(DefaultModelConfig.clientsCollectionName).remove({})
+    Mongo.Collection.get(DefaultModelConfig.accessTokensCollectionName).remove({})
+    Mongo.Collection.get(DefaultModelConfig.refreshTokensCollectionName).remove({})
+    Mongo.Collection.get(DefaultModelConfig.authCodesCollectionName).remove({})
   })
 
   describe('constructor', function () {
@@ -154,13 +161,48 @@ describe('model', function () {
   })
 
   describe('saveToken', function () {
-    it('saves an access token')
-    it('optionally saves a refresh token')
-    it('optionally allows to assign extended values')
+    let model
+
+    beforeEach(function () {
+      model = new OAuthMeteorModel()
+    })
+
+    it('saves an access token', async () => {
+      const insertTokenDoc = {
+        accessToken: Random.id(),
+        accessTokenExpiresAt: new Date(),
+        refreshToken: Random.id(),
+        refreshTokenExpiresAt: new Date(),
+        scope: ['foo', 'bar']
+      }
+      const clientDoc = { clientId: Random.id() }
+      const userDoc = { id: Random.id() }
+      const tokenDoc = await model.saveToken(insertTokenDoc, clientDoc, userDoc)
+      expect(tokenDoc).to.deep.equal({
+        ...tokenDoc,
+        client: { id: clientDoc.clientId },
+        user: userDoc
+      })
+    })
   })
 
   describe('getAccessToken', function () {
-    it('returns a saved token')
+    let model
+
+    beforeEach(function () {
+      model = new OAuthMeteorModel()
+    })
+
+    it('returns a saved token', async () => {
+      const collection = Mongo.Collection.get(DefaultModelConfig.accessTokensCollectionName)
+      const accessToken = Random.id()
+      const docId = collection.insert({ accessToken })
+      const tokenDoc = await model.getAccessToken(accessToken)
+      expect(tokenDoc).to.deep.equal({
+        _id: docId,
+        accessToken
+      })
+    })
   })
 
   describe('saveAuthorizationCode', function () {

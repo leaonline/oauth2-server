@@ -105,12 +105,13 @@ describe('integration tests of OAuth2 workflows', function () {
       })
     }
 
-    const ClientCollection = Mongo.Collection.get(DefaultModelConfig.clientsCollectionName)
+    let ClientCollection
     let clientDoc
     let user
 
-    beforeEach(function () {
-      const clientDocId = authCodeServer.registerClient({
+    beforeEach(async function () {
+      ClientCollection = Mongo.Collection.get(DefaultModelConfig.clientsCollectionName)
+      const clientDocId = await authCodeServer.registerClient({
         title: Random.id(),
         redirectUris: [Meteor.absoluteUrl(`/${Random.id()}`)],
         grants: ['authorization_code']
