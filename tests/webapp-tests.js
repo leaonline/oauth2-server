@@ -2,7 +2,7 @@
 import { Meteor } from 'meteor/meteor'
 import { HTTP } from 'meteor/jkuester:http'
 import { Random } from 'meteor/random'
-import { assert } from 'meteor/practicalmeteor:chai'
+import { assert } from 'chai'
 import { app } from '../lib/webapp'
 
 const toUrl = path => Meteor.absoluteUrl(path)

@@ -43,22 +43,22 @@ describe('validation', function () {
       })
     })
     describe(UserValidation.isValid.name, function () {
-      it('returns true if not registered (skips)', function () {
+      it('returns true if not registered (skips)', async function () {
         const instance = { instanceId, debug: true }
-        expect(UserValidation.isValid()).to.equal(true)
-        expect(UserValidation.isValid(instance)).to.equal(true)
+        expect(await UserValidation.isValid()).to.equal(true)
+        expect(await UserValidation.isValid(instance)).to.equal(true)
       })
-      it('returns true if registered and handler passes', function () {
+      it('returns true if registered and handler passes', async function () {
         const instance = { instanceId, debug: true }
         const handler = () => true
         UserValidation.register(instance, handler)
-        expect(UserValidation.isValid(instance)).to.equal(true)
+        expect(await UserValidation.isValid(instance)).to.equal(true)
       })
-      it('returns false if registered and handler denies', function () {
+      it('returns false if registered and handler denies', async function () {
         const instance = { instanceId, debug: true }
         const handler = () => false
         UserValidation.register(instance, handler)
-        expect(UserValidation.isValid(instance)).to.equal(false)
+        expect(await UserValidation.isValid(instance)).to.equal(false)
       })
     })
   })
