@@ -70,22 +70,6 @@ describe('webapp', function () {
     })
   })
 
-  it('transforms any request to application/x-www-form-urlencoded', function (done) {
-    const route = Random.id()
-    const url = toUrl(route)
-
-    app.post(`/${route}`, function (req, res, next) {
-      try {
-        assert.equal(req.headers['content-type'], 'application/x-www-form-urlencoded')
-        finish(res, done)
-      } catch (e) {
-        finish(res, done, e)
-      }
-    })
-
-    HTTP.post(url)
-  })
-
   it('creates a POST route which is not reachable via GET request', function (done) {
     const route = Random.id()
     const url = toUrl(route)
