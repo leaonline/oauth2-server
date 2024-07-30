@@ -47,9 +47,14 @@ describe('constructor', function () {
 
   it('can be created with a custom model', function () {
     const model = {
-      getAccessToken: function () {
-        return new Promise('works!')
-      }
+      getAccessToken: async () => true,
+      getAuthorizationCode: async () => true,
+      getClient: async () => true,
+      getRefreshToken: async () => true,
+      revokeAuthorizationCode: async () => true,
+      saveAuthorizationCode: async () => true,
+      saveRefreshToken: async () => true,
+      saveToken: async () => true
     }
     const server = new OAuth2Server({ model })
     assert.isDefined(server)
@@ -78,29 +83,31 @@ describe('integration tests of OAuth2 workflows', function () {
     const logErrors = false
     const authCodeServer = new OAuth2Server({ debug, model: { debug }, routes })
 
-    const get = async (url, params, cb) => {
+    const get = (url, params, cb) => new Promise((resolve, reject) => {
       const fullUrl = Meteor.absoluteUrl(url)
       HTTP.get(fullUrl, params, (err, res) => {
-        if (err && logErrors) console.error(err)
+        if (err && logErrors) return reject(err)
         try {
           cb(res)
+          resolve()
         } catch (e) {
-          assert.fail()
+          reject(e)
         }
       })
-    }
+    })
 
-    const post = async (url, params, cb) => {
+    const post = (url, params, cb) => new Promise((resolve, reject) => {
       const fullUrl = Meteor.absoluteUrl(url)
       HTTP.post(fullUrl, params, (err, res) => {
-        if (err && logErrors) console.error(err)
+        if (err && logErrors) return reject(err)
         try {
           cb(res)
+          resolve()
         } catch (e) {
-          assert.fail()
+          reject(e)
         }
       })
-    }
+    })
 
     let ClientCollection
     let clientDoc
@@ -370,7 +377,7 @@ describe('integration tests of OAuth2 workflows', function () {
           assert.equal(res.statusCode, 200)
 
           const headers = res.headers
-          assert.equal(headers['content-type'], 'application/json')
+          assert.equal(headers['content-type'].includes('application/json'), true)
           assert.equal(headers['cache-control'], 'no-store')
           assert.equal(headers.pragma, 'no-cache')
 

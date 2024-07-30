@@ -4,13 +4,20 @@ import { assert } from 'chai'
 import { errorHandler } from '../lib/utils/error'
 
 class Res {
-  writeHead (httpStatus, options) {
+  status (httpStatus) {
     this.httpStatus = httpStatus
+  }
+
+  set (options) {
     this.options = options
   }
 
-  end (body) {
+  send (body) {
     this.body = body
+  }
+
+  json (body) {
+    this.body = JSON.stringify(body)
   }
 }
 

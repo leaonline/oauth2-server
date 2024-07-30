@@ -205,6 +205,22 @@ describe('model', function () {
     })
   })
 
+  describe('verifyScope', () => {
+    let model
+
+    beforeEach(function () {
+      model = new OAuthMeteorModel()
+    })
+
+    it('returns true if the access token scope meets the expected scope', async () => {
+      expect(await model.verifyScope({ scope: ['foo'] }, ['foo'])).to.equal(true)
+      expect(await model.verifyScope({ scope: ['foo'] }, ['foo', 'bar'])).to.equal(false)
+      expect(await model.verifyScope({ scope: ['foo'] }, [])).to.equal(false)
+      expect(await model.verifyScope({ scope: [] }, ['foo'])).to.equal(false)
+      expect(await model.verifyScope({ scope: ['foo', 'bar'] }, ['foo'])).to.equal(false)
+    })
+  })
+
   describe('saveAuthorizationCode', function () {
     it('is not yet implemented')
   })
