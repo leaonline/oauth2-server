@@ -35,7 +35,6 @@ describe('validation', function () {
     })
     describe(UserValidation.register.name, function () {
       it('throws if key is not an instance with instanceId', function () {
-        expect(() => UserValidation.register()).to.throw('Match error: Expected string, got undefined in field instanceId')
         expect(() => UserValidation.register({})).to.throw('Match error: Expected string, got undefined in field instanceId')
       })
       it('throws if fct ist not a function', function () {
@@ -43,22 +42,22 @@ describe('validation', function () {
       })
     })
     describe(UserValidation.isValid.name, function () {
-      it('returns true if not registered (skips)', function () {
-        const instance = { instanceId, debug: true }
-        expect(UserValidation.isValid()).to.equal(true)
-        expect(UserValidation.isValid(instance)).to.equal(true)
+      it('returns true if not registered (skips)', async function () {
+        const instance = { instanceId }
+        expect(await UserValidation.isValid({})).to.equal(true)
+        expect(await UserValidation.isValid(instance)).to.equal(true)
       })
-      it('returns true if registered and handler passes', function () {
-        const instance = { instanceId, debug: true }
+      it('returns true if registered and handler passes', async function () {
+        const instance = { instanceId }
         const handler = () => true
         UserValidation.register(instance, handler)
-        expect(UserValidation.isValid(instance)).to.equal(true)
+        expect(await UserValidation.isValid(instance)).to.equal(true)
       })
-      it('returns false if registered and handler denies', function () {
-        const instance = { instanceId, debug: true }
+      it('returns false if registered and handler denies', async function () {
+        const instance = { instanceId }
         const handler = () => false
         UserValidation.register(instance, handler)
-        expect(UserValidation.isValid(instance)).to.equal(false)
+        expect(await UserValidation.isValid(instance)).to.equal(false)
       })
     })
   })

@@ -1,5 +1,14 @@
 # History
 
+### 6.0.0
+- Meteor 3 / Express compatibility
+- added scope verification in authenticated routes
+- improved internal logging
+- fix bug in validation for custom models
+
+## 5.0.0
+- sync support for @node-oauth/oauth2-server 5.x by
+
 ## 4.2.1
 - this is a patch release, fixing a syntax error 
   (that never got picked up, due to wrong linter config)

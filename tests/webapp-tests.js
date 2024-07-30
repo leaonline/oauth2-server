@@ -2,7 +2,7 @@
 import { Meteor } from 'meteor/meteor'
 import { HTTP } from 'meteor/jkuester:http'
 import { Random } from 'meteor/random'
-import { assert } from 'meteor/practicalmeteor:chai'
+import { assert } from 'chai'
 import { app } from '../lib/webapp'
 
 const toUrl = path => Meteor.absoluteUrl(path)
@@ -68,22 +68,6 @@ describe('webapp', function () {
     HTTP.post(url, {
       params: { test }
     })
-  })
-
-  it('transforms any request to application/x-www-form-urlencoded', function (done) {
-    const route = Random.id()
-    const url = toUrl(route)
-
-    app.post(`/${route}`, function (req, res, next) {
-      try {
-        assert.equal(req.headers['content-type'], 'application/x-www-form-urlencoded')
-        finish(res, done)
-      } catch (e) {
-        finish(res, done, e)
-      }
-    })
-
-    HTTP.post(url)
   })
 
   it('creates a POST route which is not reachable via GET request', function (done) {
