@@ -1,5 +1,14 @@
 # History
 
+## 5.2.0
+- implement refreshtoken, see #19
+
+## 5.1.0
+- upgraded node-oauth-server to 5.1.0
+
+## 5.0.0
+- compatibility with node-oauth-server v5
+
 ## 4.2.1
 - this is a patch release, fixing a syntax error 
   (that never got picked up, due to wrong linter config)
