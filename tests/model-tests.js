@@ -232,14 +232,13 @@ describe('model', function () {
       const collection = Mongo.Collection.get(DefaultModelConfig.accessTokensCollectionName)
       const refreshToken = Random.id()
       await collection.insertAsync({ refreshToken })
-      const tokenDoc = await model.revokeToken({refreshToken})
+      const tokenDoc = await model.revokeToken({ refreshToken })
       assert.isTrue(tokenDoc)
     })
 
     it('returns false if the refresh token was not found', async () => {
-      const collection = Mongo.Collection.get(DefaultModelConfig.accessTokensCollectionName)
       const refreshToken = Random.id()
-      const tokenDoc = await model.revokeToken({refreshToken})
+      const tokenDoc = await model.revokeToken({ refreshToken })
       assert.isFalse(tokenDoc)
     })
   })
