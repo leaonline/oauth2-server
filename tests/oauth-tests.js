@@ -54,7 +54,8 @@ describe('constructor', function () {
       revokeAuthorizationCode: async () => true,
       saveAuthorizationCode: async () => true,
       saveRefreshToken: async () => true,
-      saveToken: async () => true
+      saveToken: async () => true,
+      revokeToken: async () => true
     }
     const server = new OAuth2Server({ model })
     assert.isDefined(server)
