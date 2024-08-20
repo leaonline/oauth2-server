@@ -19,9 +19,8 @@ Npm.depends({
 
 Package.onTest(function (api) {
   api.use([
-    // 'lmieulet:meteor-legacy-coverage',
-    // 'lmieulet:meteor-coverage@3.2.0',
-    // 'lmieulet:meteor-packages-coverage',
+    'lmieulet:meteor-legacy-coverage@0.4.0',
+    'lmieulet:meteor-coverage@4.3.0',
     'meteortesting:mocha@3.0.0-rc.1'
   ])
   api.use('ecmascript')
