@@ -5,6 +5,7 @@
 - added scope verification in authenticated routes
 - improved internal logging
 - fix bug in validation for custom models
+- fix support for explicit `client.id` field
 
 ## 5.0.0
 - sync support for @node-oauth/oauth2-server 5.x by

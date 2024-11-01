@@ -292,7 +292,7 @@ describe('integration tests of OAuth2 workflows', function () {
           authorizationCode,
           expiresAt,
           redirectUri: clientDoc.redirectUris[0]
-        }, { client_id: clientDoc.clientId }, { id: user._id })
+        }, clientDoc, { id: user._id })
 
         const params = {
           code: authorizationCode,
@@ -317,7 +317,7 @@ describe('integration tests of OAuth2 workflows', function () {
           authorizationCode,
           expiresAt,
           redirectUri: clientDoc.redirectUris[0]
-        }, {}, { id: user._id })
+        }, clientDoc, { id: user._id })
 
         const params = {
           code: authorizationCode,
@@ -359,11 +359,13 @@ describe('integration tests of OAuth2 workflows', function () {
       it('issues an access token for a valid request', async () => {
         const authorizationCode = Random.id()
         const expiresAt = new Date(new Date().getTime() + 30000)
-        await authCodeServer.model.saveAuthorizationCode({
+        const code = {
           authorizationCode,
           expiresAt,
           redirectUri: clientDoc.redirectUris[0]
-        }, {}, { id: user._id })
+        }
+
+        await authCodeServer.model.saveAuthorizationCode(code, clientDoc, { id: user._id })
 
         const params = {
           code: authorizationCode,
