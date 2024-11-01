@@ -46,6 +46,7 @@ Uses the following values to check:</p>
 <li>&#39;saveRefreshToken&#39;,</li>
 <li>&#39;saveToken&#39;,</li>
 <li>&#39;getAccessToken&#39;</li>
+<li>&#39;revokeToken&#39;</li>
 </ul>
 </dd>
 <dt><a href="#UserValidation">UserValidation</a></dt>
@@ -79,6 +80,8 @@ Implements the OAuth2Server model with Meteor-Mongo bindings.
     * [.saveRefreshToken(token, clientId, expires, user)](#OAuthMeteorModel+saveRefreshToken) ⇒ <code>Promise.&lt;\*&gt;</code>
     * [.getRefreshToken()](#OAuthMeteorModel+getRefreshToken)
     * [.grantTypeAllowed(clientId, grantType)](#OAuthMeteorModel+grantTypeAllowed) ⇒ <code>boolean</code>
+    * [.verifyScope(accessToken, scope)](#OAuthMeteorModel+verifyScope) ⇒ <code>Promise.&lt;boolean&gt;</code>
+    * [.revokeToken()](#OAuthMeteorModel+revokeToken)
 
 <a name="OAuthMeteorModel+log"></a>
 
@@ -202,6 +205,24 @@ getRefreshToken(token) should return an object with:
 | clientId | 
 | grantType | 
 
+<a name="OAuthMeteorModel+verifyScope"></a>
+
+### oAuthMeteorModel.verifyScope(accessToken, scope) ⇒ <code>Promise.&lt;boolean&gt;</code>
+Compares expected scope from token with actual scope from request
+
+**Kind**: instance method of [<code>OAuthMeteorModel</code>](#OAuthMeteorModel)  
+
+| Param |
+| --- |
+| accessToken | 
+| scope | 
+
+<a name="OAuthMeteorModel+revokeToken"></a>
+
+### oAuthMeteorModel.revokeToken()
+revokeToken(refreshToken) is required and should return true
+
+**Kind**: instance method of [<code>OAuthMeteorModel</code>](#OAuthMeteorModel)  
 <a name="OAuth2ServerDefaults"></a>
 
 ## OAuth2ServerDefaults : <code>Object</code>
@@ -278,6 +299,7 @@ Uses the following values to check:
 - 'saveRefreshToken',
 - 'saveToken',
 - 'getAccessToken'
+- 'revokeToken'
 
 **Kind**: global constant  
 **Returns**: <code>boolean</code> - true if valid, otherwise false  
