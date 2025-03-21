@@ -46,11 +46,15 @@ Uses the following values to check:</p>
 <li>&#39;saveRefreshToken&#39;,</li>
 <li>&#39;saveToken&#39;,</li>
 <li>&#39;getAccessToken&#39;</li>
+<li>&#39;revokeToken&#39;</li>
 </ul>
 </dd>
 <dt><a href="#UserValidation">UserValidation</a></dt>
 <dd><p>Used to register handlers for different instances that validate users.
 This allows you to validate user access on a client-based level.</p>
+</dd>
+<dt><a href="#validateParams">validateParams</a> ⇒ <code>boolean</code></dt>
+<dd><p>Abstraction that checks given query/body params against a given schema</p>
 </dd>
 <dt><a href="#app">app</a> : <code>Object</code></dt>
 <dd><p>Wrapped <code>WebApp</code> with express-style get/post and default use routes.</p>
@@ -76,6 +80,8 @@ Implements the OAuth2Server model with Meteor-Mongo bindings.
     * [.saveRefreshToken(token, clientId, expires, user)](#OAuthMeteorModel+saveRefreshToken) ⇒ <code>Promise.&lt;\*&gt;</code>
     * [.getRefreshToken()](#OAuthMeteorModel+getRefreshToken)
     * [.grantTypeAllowed(clientId, grantType)](#OAuthMeteorModel+grantTypeAllowed) ⇒ <code>boolean</code>
+    * [.verifyScope(accessToken, scope)](#OAuthMeteorModel+verifyScope) ⇒ <code>Promise.&lt;boolean&gt;</code>
+    * [.revokeToken()](#OAuthMeteorModel+revokeToken)
 
 <a name="OAuthMeteorModel+log"></a>
 
@@ -199,6 +205,24 @@ getRefreshToken(token) should return an object with:
 | clientId | 
 | grantType | 
 
+<a name="OAuthMeteorModel+verifyScope"></a>
+
+### oAuthMeteorModel.verifyScope(accessToken, scope) ⇒ <code>Promise.&lt;boolean&gt;</code>
+Compares expected scope from token with actual scope from request
+
+**Kind**: instance method of [<code>OAuthMeteorModel</code>](#OAuthMeteorModel)  
+
+| Param |
+| --- |
+| accessToken | 
+| scope | 
+
+<a name="OAuthMeteorModel+revokeToken"></a>
+
+### oAuthMeteorModel.revokeToken()
+revokeToken(refreshToken) is required and should return true
+
+**Kind**: instance method of [<code>OAuthMeteorModel</code>](#OAuthMeteorModel)  
 <a name="OAuth2ServerDefaults"></a>
 
 ## OAuth2ServerDefaults : <code>Object</code>
@@ -250,6 +274,7 @@ Defaults to a 500 response, unless further details were added.
 | res |  |  |
 | options | <code>Object</code> | options with error information |
 | options.error | <code>String</code> | Error name |
+| options.logError | <code>boolean</code> | optional flag to log the erroe to the console |
 | options.description | <code>String</code> | Error description |
 | options.uri | <code>String</code> | Optional uri to redirect to when error occurs |
 | options.status | <code>Number</code> | Optional statuscode, defaults to 500 |
@@ -274,6 +299,7 @@ Uses the following values to check:
 - 'saveRefreshToken',
 - 'saveToken',
 - 'getAccessToken'
+- 'revokeToken'
 
 **Kind**: global constant  
 **Returns**: <code>boolean</code> - true if valid, otherwise false  
@@ -289,6 +315,24 @@ Used to register handlers for different instances that validate users.
 This allows you to validate user access on a client-based level.
 
 **Kind**: global constant  
+
+* [UserValidation](#UserValidation)
+    * [.register(instance, validationHandler)](#UserValidation.register)
+    * [.isValid(instance, handlerArgs)](#UserValidation.isValid) ⇒ <code>\*</code>
+
+<a name="UserValidation.register"></a>
+
+### UserValidation.register(instance, validationHandler)
+Registers a validation method that allows
+to validate users on custom logic.
+
+**Kind**: static method of [<code>UserValidation</code>](#UserValidation)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| instance | [<code>OAuth2Server</code>](#OAuth2Server) |  |
+| validationHandler | <code>function</code> | sync or async function that performs the validation |
+
 <a name="UserValidation.isValid"></a>
 
 ### UserValidation.isValid(instance, handlerArgs) ⇒ <code>\*</code>
@@ -302,6 +346,19 @@ Delegates `handlerArgs` to the registered validation handler.
 | instance | [<code>OAuth2Server</code>](#OAuth2Server) | 
 | handlerArgs | <code>\*</code> | 
 
+<a name="validateParams"></a>
+
+## validateParams ⇒ <code>boolean</code>
+Abstraction that checks given query/body params against a given schema
+
+**Kind**: global constant  
+
+| Param |
+| --- |
+| actualParams | 
+| requiredParams | 
+| debug | 
+
 <a name="app"></a>
 
 ## app : <code>Object</code>
@@ -309,46 +366,3 @@ Wrapped `WebApp` with express-style get/post and default use routes.
 
 **Kind**: global constant  
 **See**: https://docs.meteor.com/packages/webapp.html  
-
-* [app](#app) : <code>Object</code>
-    * [.get(url, handler)](#app.get)
-    * [.post(url, handler)](#app.post)
-    * [.use(args)](#app.use)
-
-<a name="app.get"></a>
-
-### app.get(url, handler)
-Creates a get route for a given handler
-
-**Kind**: static method of [<code>app</code>](#app)  
-
-| Param | Type |
-| --- | --- |
-| url | <code>string</code> | 
-| handler | <code>function</code> | 
-
-<a name="app.post"></a>
-
-### app.post(url, handler)
-Creates a post route for a given handler.
-If headers' content-type does not equal to `application/x-www-form-urlencoded`
-then it will be transformed accordingly.
-
-**Kind**: static method of [<code>app</code>](#app)  
-
-| Param | Type |
-| --- | --- |
-| url | <code>string</code> | 
-| handler | <code>function</code> | 
-
-<a name="app.use"></a>
-
-### app.use(args)
-Default wrapper around `WebApp.use`
-
-**Kind**: static method of [<code>app</code>](#app)  
-
-| Param |
-| --- |
-| args | 
-

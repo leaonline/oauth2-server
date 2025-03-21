@@ -1,7 +1,7 @@
 /* eslint-env mocha */
 import { Meteor } from 'meteor/meteor'
 import { Mongo } from 'meteor/mongo'
-import { assert } from 'meteor/practicalmeteor:chai'
+import { assert } from 'chai'
 import { Random } from 'meteor/random'
 import { Accounts } from 'meteor/accounts-base'
 import { HTTP } from 'meteor/jkuester:http'
@@ -47,13 +47,18 @@ describe('constructor', function () {
 
   it('can be created with a custom model', function () {
     const model = {
-      getAccessToken: function () {
-        return new Promise('works!')
-      }
+      getAccessToken: async () => true,
+      getAuthorizationCode: async () => true,
+      getClient: async () => true,
+      getRefreshToken: async () => true,
+      revokeAuthorizationCode: async () => true,
+      saveAuthorizationCode: async () => true,
+      saveRefreshToken: async () => true,
+      saveToken: async () => true,
+      revokeToken: async () => true
     }
     const server = new OAuth2Server({ model })
     assert.isDefined(server)
-    console.debug(server.model)
     assert.deepEqual(server.model, model)
   })
 
@@ -79,31 +84,31 @@ describe('integration tests of OAuth2 workflows', function () {
     const logErrors = false
     const authCodeServer = new OAuth2Server({ debug, model: { debug }, routes })
 
-    const get = (url, params, done, cb) => {
+    const get = (url, params, cb) => new Promise((resolve, reject) => {
       const fullUrl = Meteor.absoluteUrl(url)
       HTTP.get(fullUrl, params, (err, res) => {
-        if (err && logErrors) console.error(err)
+        if (err && logErrors) return reject(err)
         try {
           cb(res)
-          done()
+          resolve()
         } catch (e) {
-          done(e)
+          reject(e)
         }
       })
-    }
+    })
 
-    const post = (url, params, done, cb) => {
+    const post = (url, params, cb) => new Promise((resolve, reject) => {
       const fullUrl = Meteor.absoluteUrl(url)
       HTTP.post(fullUrl, params, (err, res) => {
-        if (err && logErrors) console.error(err)
+        if (err && logErrors) return reject(err)
         try {
           cb(res)
-          done()
+          resolve()
         } catch (e) {
-          done(e)
+          reject(e)
         }
       })
-    }
+    })
 
     let ClientCollection
     let clientDoc
@@ -116,76 +121,76 @@ describe('integration tests of OAuth2 workflows', function () {
         redirectUris: [Meteor.absoluteUrl(`/${Random.id()}`)],
         grants: ['authorization_code']
       })
-      clientDoc = ClientCollection.findOne(clientDocId)
+      clientDoc = await ClientCollection.findOneAsync(clientDocId)
       assert.isDefined(clientDoc)
 
       // for the user we are faking the
       // login token to simulare a user, that is
       // currently logged in
-      const userId = Accounts.createUser({ username: Random.id(), password: Random.id() })
+      const userId = await Accounts.createUserAsync({ username: Random.id(), password: Random.id() })
       const token = Random.id()
       const hashedToken = Accounts._hashLoginToken(token)
-      Meteor.users.update(userId, {
+      await Meteor.users.updateAsync(userId, {
         $set: {
           token: token,
           'services.resume.loginTokens.hashedToken': hashedToken
         }
       })
-      user = Meteor.users.findOne(userId)
+      user = await Meteor.users.findOneAsync(userId)
     })
 
     describe('Authorization Request', function () {
-      it('returns a valid response for a valid request', function (done) {
+      it('returns a valid response for a valid request', async () => {
         const params = {
           client_id: clientDoc.clientId,
           response_type: 'code',
           redirect_uri: clientDoc.redirectUris[0],
           state: Random.id()
         }
-        get(routes.authorizeUrl, { params }, done, res => {
+        await get(routes.authorizeUrl, { params }, res => {
           assert.equal(res.statusCode, 200)
           assert.equal(res.data, null)
         })
       })
 
-      it('returns an invalid_request error for invalid formed requests', function (done) {
+      it('returns an invalid_request error for invalid formed requests', async () => {
         const params = { state: Random.id() }
-        get(routes.authorizeUrl, { params }, done, (res) => {
+        await get(routes.authorizeUrl, { params }, (res) => {
           assert.equal(res.statusCode, 400)
           assert.equal(res.data.error, 'invalid_request')
           assert.equal(res.data.state, params.state)
         })
       })
 
-      it('returns unsupported_response_type if the response method is not supported by the server', function (done) {
+      it('returns unsupported_response_type if the response method is not supported by the server', async () => {
         const params = {
           client_id: clientDoc.clientId,
           response_type: Random.id(),
           redirect_uri: clientDoc.redirectUris[0],
           state: Random.id()
         }
-        get(routes.authorizeUrl, { params }, done, res => {
+        await get(routes.authorizeUrl, { params }, res => {
           assert.equal(res.statusCode, 415)
           assert.equal(res.data.error, 'unsupported_response_type')
           assert.equal(res.data.state, params.state)
         })
       })
 
-      it('returns an unauthorized_client error for invalid clients', function (done) {
+      it('returns an unauthorized_client error for invalid clients', async () => {
         const params = {
           client_id: Random.id(),
           response_type: 'code',
           redirect_uri: clientDoc.redirectUris[0],
           state: Random.id()
         }
-        get(routes.authorizeUrl, { params }, done, (res) => {
+        await get(routes.authorizeUrl, { params }, (res) => {
           assert.equal(res.statusCode, 401)
           assert.equal(res.data.error, 'unauthorized_client')
           assert.equal(res.data.state, params.state)
         })
       })
 
-      it('returns an invalid_request on invalid redirect_uri', function (done) {
+      it('returns an invalid_request on invalid redirect_uri', async () => {
         const invalidRedirectUri = Meteor.absoluteUrl(`/${Random.id()}`)
         const params = {
           client_id: clientDoc.clientId,
@@ -193,7 +198,7 @@ describe('integration tests of OAuth2 workflows', function () {
           redirect_uri: invalidRedirectUri,
           state: Random.id()
         }
-        get(routes.authorizeUrl, { params }, done, (res) => {
+        await get(routes.authorizeUrl, { params }, (res) => {
           assert.equal(res.statusCode, 400)
           assert.equal(res.data.error, 'invalid_request')
           assert.equal(res.data.error_description, `Invalid redirection uri ${invalidRedirectUri}`)
@@ -204,7 +209,7 @@ describe('integration tests of OAuth2 workflows', function () {
 
     describe('Authorization Response', function () {
       [true, false].forEach(followRedirects => {
-        it(`issues an authorization code and delivers it to the client via redirect follow=${followRedirects}`, function (done) {
+        it(`issues an authorization code and delivers it to the client via redirect follow=${followRedirects}`, async () => {
           const params = {
             client_id: clientDoc.clientId,
             response_type: 'code',
@@ -218,7 +223,7 @@ describe('integration tests of OAuth2 workflows', function () {
           // redirect and expect a 200 repsonse or, if we don't follow,
           // we expect a 302 response with location header, which can be used
           // by the client to manually follow
-          post(routes.authorizeUrl, { params, followRedirects }, done, res => {
+          await post(routes.authorizeUrl, { params, followRedirects }, res => {
             if (followRedirects) {
               assert.equal(res.statusCode, 200)
               assert.equal(res.headers.location, undefined)
@@ -235,7 +240,7 @@ describe('integration tests of OAuth2 workflows', function () {
         })
       })
 
-      it('returns an access_denied error when no user exists for the given token', function (done) {
+      it('returns an access_denied error when no user exists for the given token', async () => {
         const params = {
           client_id: clientDoc.clientId,
           response_type: 'code',
@@ -244,14 +249,14 @@ describe('integration tests of OAuth2 workflows', function () {
           token: Random.id(),
           allowed: undefined
         }
-        post(routes.authorizeUrl, { params }, done, res => {
+        await post(routes.authorizeUrl, { params }, res => {
           assert.equal(res.statusCode, 400)
           assert.equal(res.data.error, 'access_denied')
           assert.equal(res.data.state, params.state)
         })
       })
 
-      it('returns an access_denied error when the user denied the request', function (done) {
+      it('returns an access_denied error when the user denied the request', async () => {
         const params = {
           client_id: clientDoc.clientId,
           response_type: 'code',
@@ -260,7 +265,7 @@ describe('integration tests of OAuth2 workflows', function () {
           token: user.token,
           allowed: 'false'
         }
-        post(routes.authorizeUrl, { params }, done, res => {
+        await post(routes.authorizeUrl, { params }, res => {
           assert.equal(res.statusCode, 400)
           assert.equal(res.data.error, 'access_denied')
           assert.equal(res.data.state, params.state)
@@ -269,25 +274,25 @@ describe('integration tests of OAuth2 workflows', function () {
     })
 
     describe('Access Token Request', function () {
-      it('returns an invalid_request error on missing credentials', function (done) {
+      it('returns an invalid_request error on missing credentials', async () => {
         const params = {
           state: Random.id()
         }
-        post(routes.accessTokenUrl, { params }, done, res => {
+        await post(routes.accessTokenUrl, { params }, res => {
           assert.equal(res.statusCode, 400)
           assert.equal(res.data.error, 'invalid_request')
           assert.equal(res.data.state, params.state)
         })
       })
 
-      it('returns an invalid_request error if the redirect uri is not correct', function (done) {
+      it('returns an invalid_request error if the redirect uri is not correct', async function () {
         const authorizationCode = Random.id()
         const expiresAt = new Date(new Date().getTime() + 30000)
-        authCodeServer.model.saveAuthorizationCode({
+        await authCodeServer.model.saveAuthorizationCode({
           authorizationCode,
           expiresAt,
           redirectUri: clientDoc.redirectUris[0]
-        }, { client_id: clientDoc.clientId }, { id: user._id })
+        }, clientDoc, { id: user._id })
 
         const params = {
           code: authorizationCode,
@@ -298,21 +303,21 @@ describe('integration tests of OAuth2 workflows', function () {
           grant_type: 'authorization_code'
         }
 
-        post(routes.accessTokenUrl, { params }, done, res => {
+        await post(routes.accessTokenUrl, { params }, res => {
           assert.equal(res.statusCode, 400)
           assert.equal(res.data.error, 'unauthorized_client')
           assert.equal(res.data.state, params.state)
         })
       })
 
-      it('returns an unauthorized_client error when the client does not provide a secret', function (done) {
+      it('returns an unauthorized_client error when the client does not provide a secret', async () => {
         const authorizationCode = Random.id()
         const expiresAt = new Date(new Date().getTime() + 30000)
-        authCodeServer.model.saveAuthorizationCode({
+        await authCodeServer.model.saveAuthorizationCode({
           authorizationCode,
           expiresAt,
           redirectUri: clientDoc.redirectUris[0]
-        }, {}, { id: user._id })
+        }, clientDoc, { id: user._id })
 
         const params = {
           code: authorizationCode,
@@ -323,7 +328,7 @@ describe('integration tests of OAuth2 workflows', function () {
           grant_type: 'authorization_code'
         }
 
-        post(routes.accessTokenUrl, { params }, done, res => {
+        await post(routes.accessTokenUrl, { params }, res => {
           assert.equal(res.statusCode, 400)
           assert.equal(res.data.error, 'unauthorized_client')
           assert.equal(res.data.error_description, 'Invalid client: client is invalid')
@@ -331,7 +336,7 @@ describe('integration tests of OAuth2 workflows', function () {
         })
       })
 
-      it('returns an unauthorized_client error when the given code is not found', function (done) {
+      it('returns an unauthorized_client error when the given code is not found', async () => {
         const params = {
           code: Random.id(),
           client_id: clientDoc.clientId,
@@ -341,7 +346,7 @@ describe('integration tests of OAuth2 workflows', function () {
           grant_type: 'authorization_code'
         }
 
-        post(routes.accessTokenUrl, { params }, done, res => {
+        await post(routes.accessTokenUrl, { params }, res => {
           assert.equal(res.statusCode, 400)
           assert.equal(res.data.error, 'unauthorized_client')
           assert.equal(res.data.error_description, 'Invalid grant: authorization code is invalid')
@@ -351,14 +356,16 @@ describe('integration tests of OAuth2 workflows', function () {
     })
 
     describe('Access Token Response', function () {
-      it('issues an access token for a valid request', function (done) {
+      it('issues an access token for a valid request', async () => {
         const authorizationCode = Random.id()
         const expiresAt = new Date(new Date().getTime() + 30000)
-        authCodeServer.model.saveAuthorizationCode({
+        const code = {
           authorizationCode,
           expiresAt,
           redirectUri: clientDoc.redirectUris[0]
-        }, {}, { id: user._id })
+        }
+
+        await authCodeServer.model.saveAuthorizationCode(code, clientDoc, { id: user._id })
 
         const params = {
           code: authorizationCode,
@@ -369,11 +376,11 @@ describe('integration tests of OAuth2 workflows', function () {
           grant_type: 'authorization_code'
         }
 
-        post(routes.accessTokenUrl, { params }, done, res => {
+        await post(routes.accessTokenUrl, { params }, res => {
           assert.equal(res.statusCode, 200)
 
           const headers = res.headers
-          assert.equal(headers['content-type'], 'application/json')
+          assert.equal(headers['content-type'].includes('application/json'), true)
           assert.equal(headers['cache-control'], 'no-store')
           assert.equal(headers.pragma, 'no-cache')
 
