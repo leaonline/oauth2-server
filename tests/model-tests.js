@@ -5,6 +5,7 @@ import { Random } from 'meteor/random'
 import { assert, expect } from 'chai'
 import { OAuthMeteorModel } from '../lib/model/model'
 import { DefaultModelConfig } from '../lib/model/DefaultModelConfig'
+import { OAuth2Server } from '../lib/oauth'
 
 const GrantTypes = {
   authorization_code: 'authorization_code',
@@ -240,6 +241,22 @@ describe('model', function () {
       const refreshToken = Random.id()
       const tokenDoc = await model.revokeToken({ refreshToken })
       assert.isFalse(tokenDoc)
+    })
+  })
+
+  describe('OAuth2Server collections exposure', () => {
+    it('should expose collections via getter', () => {
+      const server = new OAuth2Server({ debug: true })
+      const collections = server.collections
+      assert.isObject(collections, 'Collections should be an object')
+      assert.instanceOf(collections.AccessTokens, Mongo.Collection, 'AccessTokens should be a Mongo.Collection')
+      assert.instanceOf(collections.RefreshTokens, Mongo.Collection, 'RefreshTokens should be a Mongo.Collection')
+      assert.instanceOf(collections.AuthCodes, Mongo.Collection, 'AuthCodes should be a Mongo.Collection')
+      assert.instanceOf(collections.Clients, Mongo.Collection, 'Clients should be a Mongo.Collection')
+      // Test read-only: attempting to mutate should throw
+      assert.throws(() => {
+        collections.AccessTokens = {}
+      }, /Cannot assign to read only property/, 'Should throw when attempting to mutate collections')
     })
   })
 
