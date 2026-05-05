@@ -1,11 +1,12 @@
 /* eslint-env mocha */
-import { Meteor } from 'meteor/meteor'
-import { HTTP } from 'meteor/jkuester:http'
-import { Random } from 'meteor/random'
+
 import { assert } from 'chai'
+import { HTTP } from 'meteor/http'
+import { Meteor } from 'meteor/meteor'
+import { Random } from 'meteor/random'
 import { app } from '../lib/webapp'
 
-const toUrl = path => Meteor.absoluteUrl(path)
+const toUrl = (path) => Meteor.absoluteUrl(path)
 
 const finish = (res, done, err) => {
   res.writeHead(200)
@@ -13,13 +14,13 @@ const finish = (res, done, err) => {
   done(err)
 }
 
-describe('webapp', function () {
-  it('creates a GET route using .get', function (done) {
+describe('webapp', () => {
+  it('creates a GET route using .get', (done) => {
     const route = Random.id()
     const test = Random.id()
     const url = toUrl(route)
 
-    app.get(`/${route}`, function (req, res, next) {
+    app.get(`/${route}`, (req, res) => {
       try {
         assert.equal(req.query.test, test)
         finish(res, done)
@@ -33,16 +34,20 @@ describe('webapp', function () {
     })
   })
 
-  it('creates a GET route which is not reachable via POST request', function (done) {
+  it('creates a GET route which is not reachable via POST request', (done) => {
     const route = Random.id()
     const test = Random.id()
     const url = toUrl(route)
 
-    app.get(`/${route}`, function (req, res, next) {
-      finish(res, done, new Error('expected GET route to not be callable via POST request'))
+    app.get(`/${route}`, (_req, res) => {
+      finish(
+        res,
+        done,
+        new Error('expected GET route to not be callable via POST request')
+      )
     })
 
-    app.post(`/${route}`, function (req, res) {
+    app.post(`/${route}`, (_req, res) => {
       finish(res, done)
     })
 
@@ -51,12 +56,12 @@ describe('webapp', function () {
     })
   })
 
-  it('creates a POST route using .post', function (done) {
+  it('creates a POST route using .post', (done) => {
     const route = Random.id()
     const test = Random.id()
     const url = toUrl(route)
 
-    app.post(`/${route}`, function (req, res, next) {
+    app.post(`/${route}`, (req, res) => {
       try {
         assert.equal(req.body.test, test)
         finish(res, done)
@@ -70,32 +75,36 @@ describe('webapp', function () {
     })
   })
 
-  it('creates a POST route which is not reachable via GET request', function (done) {
+  it('creates a POST route which is not reachable via GET request', (done) => {
     const route = Random.id()
     const url = toUrl(route)
 
-    app.post(`/${route}`, function (req, res, next) {
-      finish(res, done, new Error('expected GET route to not be callable via POST request'))
+    app.post(`/${route}`, (_req, res) => {
+      finish(
+        res,
+        done,
+        new Error('expected GET route to not be callable via POST request')
+      )
     })
 
-    app.get(`/${route}`, function (req, res) {
+    app.get(`/${route}`, (_req, res) => {
       finish(res, done)
     })
 
     HTTP.get(url)
   })
 
-  it('creates a POST AND GET route using .use', function (done) {
+  it('creates a POST AND GET route using .use', (done) => {
     const route = Random.id()
     const url = toUrl(route)
 
     const finished = { get: false, post: false }
-    const checkDone = method => {
+    const checkDone = (method) => {
       finished[method] = true
-      return (finished.get && finished.post)
+      return finished.get && finished.post
     }
 
-    app.use(`/${route}`, function (req, res, next) {
+    app.use(`/${route}`, (req, res, next) => {
       if (checkDone(req.method.toLowerCase())) {
         return finish(res, done)
       } else {
@@ -104,7 +113,7 @@ describe('webapp', function () {
     })
 
     HTTP.get(url)
-    Meteor.setTimeout(function () {
+    Meteor.setTimeout(() => {
       HTTP.post(url)
     }, 500)
   })

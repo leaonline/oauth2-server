@@ -13,14 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
       - name: Cache NPM dependencies
         id: cache-npm
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.npm
           key: v3-npm-${{ hashFiles('package-lock.json') }}
@@ -30,7 +30,7 @@ jobs:
       - name: Run lint
         run: |
           cd test-proxy
-          npm install
+          npm ci
           npm run setup
           npm run lint
 
@@ -39,12 +39,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # CACHING
       - name: Install Meteor
         id: cache-meteor-install
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.meteor
           key: v3-meteor-${{ hashFiles('.meteor/versions') }}
@@ -53,7 +53,7 @@ jobs:
 
       - name: Cache NPM dependencies
         id: cache-meteor-npm
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: ~/.npm
           key: v3-npm-${{ hashFiles('package-lock.json') }}
@@ -62,7 +62,7 @@ jobs:
 
       - name: Cache Meteor build
         id: cache-meteor-build
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: |
             .meteor/local/resolver-result-cache.json
@@ -76,11 +76,11 @@ jobs:
       - name: Setup meteor
         uses: meteorengineer/setup-meteor@v1
         with:
-          meteor-release: '2.8.1'
+          meteor-release: '3.4.1'
 
       - name: Run tests
         run: |
           cd test-proxy
-          meteor npm install
+          meteor npm ci
           meteor npm run setup
           meteor npm run test

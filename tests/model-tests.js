@@ -1,10 +1,11 @@
 /* eslint-env mocha */
+
+import { assert, expect } from 'chai'
 import { Meteor } from 'meteor/meteor'
 import { Mongo } from 'meteor/mongo'
 import { Random } from 'meteor/random'
-import { assert, expect } from 'chai'
-import { OAuthMeteorModel } from '../lib/model/model'
 import { DefaultModelConfig } from '../lib/model/DefaultModelConfig'
+import { OAuthMeteorModel } from '../lib/model/model'
 
 const GrantTypes = {
   authorization_code: 'authorization_code',
@@ -14,19 +15,19 @@ const GrantTypes = {
   password: 'password'
 }
 
-const assertCollection = name => {
-  const collection = Mongo.Collection.get(name)
+const assertCollection = (name) => {
+  const collection = Mongo.getCollection(name)
   assert.isDefined(collection)
   assert.instanceOf(collection, Mongo.Collection)
 }
 
-describe('model', function () {
+describe('model', () => {
   let randomAccessTokenName = Random.id()
   let randomRefreshTokenName = Random.id()
   let randomAuthCodeName = Random.id()
   let randomClientsName = Random.id()
 
-  beforeEach(function () {
+  beforeEach(() => {
     randomAccessTokenName = Random.id()
     randomRefreshTokenName = Random.id()
     randomAuthCodeName = Random.id()
@@ -34,14 +35,22 @@ describe('model', function () {
   })
 
   afterEach(async () => {
-    await Mongo.Collection.get(DefaultModelConfig.clientsCollectionName).removeAsync({})
-    await Mongo.Collection.get(DefaultModelConfig.accessTokensCollectionName).removeAsync({})
-    await Mongo.Collection.get(DefaultModelConfig.refreshTokensCollectionName).removeAsync({})
-    await Mongo.Collection.get(DefaultModelConfig.authCodesCollectionName).removeAsync({})
+    await Mongo.getCollection(
+      DefaultModelConfig.clientsCollectionName
+    ).removeAsync({})
+    await Mongo.getCollection(
+      DefaultModelConfig.accessTokensCollectionName
+    ).removeAsync({})
+    await Mongo.getCollection(
+      DefaultModelConfig.refreshTokensCollectionName
+    ).removeAsync({})
+    await Mongo.getCollection(
+      DefaultModelConfig.authCodesCollectionName
+    ).removeAsync({})
   })
 
-  describe('constructor', function () {
-    it('can be created with defaults', function () {
+  describe('constructor', () => {
+    it('can be created with defaults', () => {
       assert.isDefined(new OAuthMeteorModel())
       assertCollection(DefaultModelConfig.accessTokensCollectionName)
       assertCollection(DefaultModelConfig.refreshTokensCollectionName)
@@ -49,30 +58,34 @@ describe('model', function () {
       assertCollection(DefaultModelConfig.clientsCollectionName)
     })
 
-    it('can be created with custom collection names', function () {
-      assert.isDefined(new OAuthMeteorModel({
-        accessTokensCollectionName: randomAccessTokenName,
-        refreshTokensCollectionName: randomRefreshTokenName,
-        authCodesCollectionName: randomAuthCodeName,
-        clientsCollectionName: randomClientsName
-      }))
+    it('can be created with custom collection names', () => {
+      assert.isDefined(
+        new OAuthMeteorModel({
+          accessTokensCollectionName: randomAccessTokenName,
+          refreshTokensCollectionName: randomRefreshTokenName,
+          authCodesCollectionName: randomAuthCodeName,
+          clientsCollectionName: randomClientsName
+        })
+      )
       assertCollection(randomAccessTokenName)
       assertCollection(randomRefreshTokenName)
       assertCollection(randomAuthCodeName)
       assertCollection(randomClientsName)
     })
 
-    it('can be created with custom collections passed', function () {
+    it('can be created with custom collections passed', () => {
       const AccessTokens = new Mongo.Collection(randomAccessTokenName)
       const RefreshTokens = new Mongo.Collection(randomRefreshTokenName)
       const AuthCodes = new Mongo.Collection(randomAuthCodeName)
       const Clients = new Mongo.Collection(randomClientsName)
-      assert.isDefined(new OAuthMeteorModel({
-        accessTokensCollection: AccessTokens,
-        refreshTokensCollection: RefreshTokens,
-        authCodesCollection: AuthCodes,
-        clientsCollection: Clients
-      }))
+      assert.isDefined(
+        new OAuthMeteorModel({
+          accessTokensCollection: AccessTokens,
+          refreshTokensCollection: RefreshTokens,
+          authCodesCollection: AuthCodes,
+          clientsCollection: Clients
+        })
+      )
       assertCollection(randomAccessTokenName)
       assertCollection(randomRefreshTokenName)
       assertCollection(randomAuthCodeName)
@@ -80,14 +93,20 @@ describe('model', function () {
     })
   })
 
-  describe('createClient', function () {
+  describe('createClient', () => {
     it('creates a client with minimum required credentials', async () => {
       const model = new OAuthMeteorModel()
       const title = Random.id()
       const redirectUris = [Meteor.absoluteUrl(`/${Random.id()}`)]
       const grants = [GrantTypes.authorization_code]
-      const clientDocId = await (model.createClient({ title, redirectUris, grants }))
-      const clientDoc = await Mongo.Collection.get(DefaultModelConfig.clientsCollectionName).findOneAsync(clientDocId)
+      const clientDocId = await model.createClient({
+        title,
+        redirectUris,
+        grants
+      })
+      const clientDoc = await Mongo.getCollection(
+        DefaultModelConfig.clientsCollectionName
+      ).findOneAsync(clientDocId)
 
       assert.isDefined(clientDoc)
       assert.isDefined(clientDoc.clientId)
@@ -104,8 +123,16 @@ describe('model', function () {
       const secret = Random.id(32)
       const redirectUris = [Meteor.absoluteUrl(`/${Random.id()}`)]
       const grants = [GrantTypes.authorization_code]
-      const clientDocId = await (model.createClient({ title, redirectUris, grants, clientId, secret }))
-      const clientDoc = await Mongo.Collection.get(DefaultModelConfig.clientsCollectionName).findOneAsync(clientDocId)
+      const clientDocId = await model.createClient({
+        title,
+        redirectUris,
+        grants,
+        clientId,
+        secret
+      })
+      const clientDoc = await Mongo.getCollection(
+        DefaultModelConfig.clientsCollectionName
+      ).findOneAsync(clientDocId)
 
       assert.isDefined(clientDoc)
       assert.equal(clientDoc.clientId, clientId)
@@ -116,7 +143,7 @@ describe('model', function () {
     })
   })
 
-  describe('getClient', function () {
+  describe('getClient', () => {
     let model
     let clientDoc
 
@@ -125,45 +152,51 @@ describe('model', function () {
       const title = Random.id()
       const redirectUris = [Meteor.absoluteUrl(`/${Random.id()}`)]
       const grants = [GrantTypes.authorization_code]
-      const clientDocId = await (model.createClient({ title, redirectUris, grants }))
-      clientDoc = await Mongo.Collection.get(DefaultModelConfig.clientsCollectionName).findOneAsync(clientDocId)
+      const clientDocId = await model.createClient({
+        title,
+        redirectUris,
+        grants
+      })
+      clientDoc = await Mongo.getCollection(
+        DefaultModelConfig.clientsCollectionName
+      ).findOneAsync(clientDocId)
     })
 
     it('returns a client by clientId', async () => {
       const { clientId } = clientDoc
-      const actualClientDoc = await (model.getClient(clientId))
+      const actualClientDoc = await model.getClient(clientId)
       assert.deepEqual(actualClientDoc, clientDoc)
     })
 
     it('returns a client on null secret', async () => {
       const { clientId } = clientDoc
-      const actualClientDoc = await (model.getClient(clientId, null))
+      const actualClientDoc = await model.getClient(clientId, null)
       assert.deepEqual(actualClientDoc, clientDoc)
     })
 
     it('returns false if no client is found', async () => {
-      const falsey = await (model.getClient(Random.id()))
+      const falsey = await model.getClient(Random.id())
       assert.isFalse(falsey)
     })
 
     it('returns a client by clientId and clientSecret', async () => {
       const { clientId } = clientDoc
       const { secret } = clientDoc
-      const actualClientDoc = await (model.getClient(clientId, secret))
+      const actualClientDoc = await model.getClient(clientId, secret)
       assert.deepEqual(actualClientDoc, clientDoc)
     })
 
     it('returns false if clientSecret is incorrect', async () => {
       const { clientId } = clientDoc
-      const falsey = await (model.getClient(clientId, Random.id()))
+      const falsey = await model.getClient(clientId, Random.id())
       assert.isFalse(falsey)
     })
   })
 
-  describe('saveToken', function () {
+  describe('saveToken', () => {
     let model
 
-    beforeEach(function () {
+    beforeEach(() => {
       model = new OAuthMeteorModel()
     })
 
@@ -186,15 +219,17 @@ describe('model', function () {
     })
   })
 
-  describe('getAccessToken', function () {
+  describe('getAccessToken', () => {
     let model
 
-    beforeEach(function () {
+    beforeEach(() => {
       model = new OAuthMeteorModel()
     })
 
     it('returns a saved token', async () => {
-      const collection = Mongo.Collection.get(DefaultModelConfig.accessTokensCollectionName)
+      const collection = Mongo.getCollection(
+        DefaultModelConfig.accessTokensCollectionName
+      )
       const accessToken = Random.id()
       const docId = await collection.insertAsync({ accessToken })
       const tokenDoc = await model.getAccessToken(accessToken)
@@ -208,28 +243,36 @@ describe('model', function () {
   describe('verifyScope', () => {
     let model
 
-    beforeEach(function () {
+    beforeEach(() => {
       model = new OAuthMeteorModel()
     })
 
     it('returns true if the access token scope meets the expected scope', async () => {
-      expect(await model.verifyScope({ scope: ['foo'] }, ['foo'])).to.equal(true)
-      expect(await model.verifyScope({ scope: ['foo'] }, ['foo', 'bar'])).to.equal(false)
+      expect(await model.verifyScope({ scope: ['foo'] }, ['foo'])).to.equal(
+        true
+      )
+      expect(
+        await model.verifyScope({ scope: ['foo'] }, ['foo', 'bar'])
+      ).to.equal(false)
       expect(await model.verifyScope({ scope: ['foo'] }, [])).to.equal(false)
       expect(await model.verifyScope({ scope: [] }, ['foo'])).to.equal(false)
-      expect(await model.verifyScope({ scope: ['foo', 'bar'] }, ['foo'])).to.equal(false)
+      expect(
+        await model.verifyScope({ scope: ['foo', 'bar'] }, ['foo'])
+      ).to.equal(false)
     })
   })
 
   describe('revokeRefreshToken', () => {
     let model
 
-    beforeEach(function () {
+    beforeEach(() => {
       model = new OAuthMeteorModel()
     })
 
     it('returns true if the refresh token was revoked', async () => {
-      const collection = Mongo.Collection.get(DefaultModelConfig.accessTokensCollectionName)
+      const collection = Mongo.getCollection(
+        DefaultModelConfig.accessTokensCollectionName
+      )
       const refreshToken = Random.id()
       await collection.insertAsync({ refreshToken })
       const tokenDoc = await model.revokeToken({ refreshToken })
@@ -243,27 +286,27 @@ describe('model', function () {
     })
   })
 
-  describe('saveAuthorizationCode', function () {
+  describe('saveAuthorizationCode', () => {
     it('is not yet implemented')
   })
 
-  describe('getAuthorizationCode', function () {
+  describe('getAuthorizationCode', () => {
     it('returns a saved authorization code')
   })
 
-  describe('revokeAuthorizationCode', function () {
+  describe('revokeAuthorizationCode', () => {
     it('is not yet implemented')
   })
 
-  describe('saveRefreshToken', function () {
+  describe('saveRefreshToken', () => {
     it('is not yet implemented')
   })
 
-  describe('getRefreshToken', function () {
+  describe('getRefreshToken', () => {
     it('is not yet implemented')
   })
 
-  describe('grantTypeAllowed', function () {
+  describe('grantTypeAllowed', () => {
     it('is not yet implemented')
   })
 
