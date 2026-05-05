@@ -4,7 +4,7 @@ import { Mongo } from 'meteor/mongo'
 import { assert } from 'chai'
 import { Random } from 'meteor/random'
 import { Accounts } from 'meteor/accounts-base'
-import { HTTP } from 'meteor/jkuester:http'
+import { HTTP } from 'meteor/http'
 import { OAuth2Server } from '../lib/oauth'
 import { OAuth2ServerDefaults } from '../lib/defaults'
 import { OAuthMeteorModel } from '../lib/model/model'
@@ -115,7 +115,7 @@ describe('integration tests of OAuth2 workflows', function () {
     let user
 
     beforeEach(async function () {
-      ClientCollection = Mongo.Collection.get(DefaultModelConfig.clientsCollectionName)
+      ClientCollection = Mongo.getCollection(DefaultModelConfig.clientsCollectionName)
       const clientDocId = await authCodeServer.registerClient({
         title: Random.id(),
         redirectUris: [Meteor.absoluteUrl(`/${Random.id()}`)],

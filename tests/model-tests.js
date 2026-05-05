@@ -15,7 +15,7 @@ const GrantTypes = {
 }
 
 const assertCollection = name => {
-  const collection = Mongo.Collection.get(name)
+  const collection = Mongo.getCollection(name)
   assert.isDefined(collection)
   assert.instanceOf(collection, Mongo.Collection)
 }
@@ -34,10 +34,10 @@ describe('model', function () {
   })
 
   afterEach(async () => {
-    await Mongo.Collection.get(DefaultModelConfig.clientsCollectionName).removeAsync({})
-    await Mongo.Collection.get(DefaultModelConfig.accessTokensCollectionName).removeAsync({})
-    await Mongo.Collection.get(DefaultModelConfig.refreshTokensCollectionName).removeAsync({})
-    await Mongo.Collection.get(DefaultModelConfig.authCodesCollectionName).removeAsync({})
+    await Mongo.getCollection(DefaultModelConfig.clientsCollectionName).removeAsync({})
+    await Mongo.getCollection(DefaultModelConfig.accessTokensCollectionName).removeAsync({})
+    await Mongo.getCollection(DefaultModelConfig.refreshTokensCollectionName).removeAsync({})
+    await Mongo.getCollection(DefaultModelConfig.authCodesCollectionName).removeAsync({})
   })
 
   describe('constructor', function () {
@@ -87,7 +87,7 @@ describe('model', function () {
       const redirectUris = [Meteor.absoluteUrl(`/${Random.id()}`)]
       const grants = [GrantTypes.authorization_code]
       const clientDocId = await (model.createClient({ title, redirectUris, grants }))
-      const clientDoc = await Mongo.Collection.get(DefaultModelConfig.clientsCollectionName).findOneAsync(clientDocId)
+      const clientDoc = await Mongo.getCollection(DefaultModelConfig.clientsCollectionName).findOneAsync(clientDocId)
 
       assert.isDefined(clientDoc)
       assert.isDefined(clientDoc.clientId)
@@ -105,7 +105,7 @@ describe('model', function () {
       const redirectUris = [Meteor.absoluteUrl(`/${Random.id()}`)]
       const grants = [GrantTypes.authorization_code]
       const clientDocId = await (model.createClient({ title, redirectUris, grants, clientId, secret }))
-      const clientDoc = await Mongo.Collection.get(DefaultModelConfig.clientsCollectionName).findOneAsync(clientDocId)
+      const clientDoc = await Mongo.getCollection(DefaultModelConfig.clientsCollectionName).findOneAsync(clientDocId)
 
       assert.isDefined(clientDoc)
       assert.equal(clientDoc.clientId, clientId)
@@ -126,7 +126,7 @@ describe('model', function () {
       const redirectUris = [Meteor.absoluteUrl(`/${Random.id()}`)]
       const grants = [GrantTypes.authorization_code]
       const clientDocId = await (model.createClient({ title, redirectUris, grants }))
-      clientDoc = await Mongo.Collection.get(DefaultModelConfig.clientsCollectionName).findOneAsync(clientDocId)
+      clientDoc = await Mongo.getCollection(DefaultModelConfig.clientsCollectionName).findOneAsync(clientDocId)
     })
 
     it('returns a client by clientId', async () => {
@@ -194,7 +194,7 @@ describe('model', function () {
     })
 
     it('returns a saved token', async () => {
-      const collection = Mongo.Collection.get(DefaultModelConfig.accessTokensCollectionName)
+      const collection = Mongo.getCollection(DefaultModelConfig.accessTokensCollectionName)
       const accessToken = Random.id()
       const docId = await collection.insertAsync({ accessToken })
       const tokenDoc = await model.getAccessToken(accessToken)
@@ -229,7 +229,7 @@ describe('model', function () {
     })
 
     it('returns true if the refresh token was revoked', async () => {
-      const collection = Mongo.Collection.get(DefaultModelConfig.accessTokensCollectionName)
+      const collection = Mongo.getCollection(DefaultModelConfig.accessTokensCollectionName)
       const refreshToken = Random.id()
       await collection.insertAsync({ refreshToken })
       const tokenDoc = await model.revokeToken({ refreshToken })

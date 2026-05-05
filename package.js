@@ -7,29 +7,25 @@ Package.describe({
 })
 
 Package.onUse(function (api) {
-  api.versionsFrom(['3.0'])
+  api.versionsFrom(['3.0', '3.4'])
   api.use('ecmascript')
   api.mainModule('lib/oauth.js', 'server')
 })
 
 Npm.depends({
-  '@node-oauth/oauth2-server': '5.2.0',
-  'body-parser': '1.20.3'
+  '@node-oauth/oauth2-server': '5.3.0',
+  'body-parser': '2.2.2'
 })
 
 Package.onTest(function (api) {
   api.use([
-    // FIXME: include, once we have a working coverage for Meteor 3
-    // 'lmieulet:meteor-legacy-coverage@0.4.0',
-    // 'lmieulet:meteor-coverage@4.3.0',
-    'meteortesting:mocha@3.2.0'
+    'meteortesting:mocha@3.3.0',
+    'ecmascript',
+    'mongo',
+    'http',
+    'accounts-base',
+    'accounts-password'
   ])
-  api.use('ecmascript')
-  api.use('mongo')
-  api.use('jkuester:http@2.1.0')
-  api.use('dburles:mongo-collection-instances@1.0.0')
-  api.use('accounts-base')
-  api.use('accounts-password')
 
   api.addFiles([
     'tests/error-tests.js',

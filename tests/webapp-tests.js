@@ -1,6 +1,6 @@
 /* eslint-env mocha */
 import { Meteor } from 'meteor/meteor'
-import { HTTP } from 'meteor/jkuester:http'
+import { HTTP } from 'meteor/http'
 import { Random } from 'meteor/random'
 import { assert } from 'chai'
 import { app } from '../lib/webapp'
