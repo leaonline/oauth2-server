@@ -1,28 +1,29 @@
 /* eslint-env mocha */
-import { Random } from 'meteor/random'
+
 import { assert } from 'chai'
+import { Random } from 'meteor/random'
 import { errorHandler } from '../lib/utils/error'
 
 class Res {
-  status (httpStatus) {
+  status(httpStatus) {
     this.httpStatus = httpStatus
   }
 
-  set (options) {
+  set(options) {
     this.options = options
   }
 
-  send (body) {
+  send(body) {
     this.body = body
   }
 
-  json (body) {
+  json(body) {
     this.body = JSON.stringify(body)
   }
 }
 
-describe('errorHandler', function () {
-  it('writes the error into a result body', function () {
+describe('errorHandler', () => {
+  it('writes the error into a result body', () => {
     const res = new Res()
 
     const error = Random.id()
